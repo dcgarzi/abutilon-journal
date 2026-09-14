@@ -86,7 +86,8 @@ th{font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.08e
 .logbtns a{cursor:pointer;color:var(--muted);margin-left:8px;font-size:12px;border-bottom:none}
 .logbtns a:hover{color:var(--accent)}
 @media(hover:none){.logbtns{opacity:.6}}
-.formactions{position:sticky;top:0;z-index:5;background:var(--card);display:flex;gap:8px;justify-content:flex-end;padding:8px 0;border-bottom:1px solid var(--line);margin-bottom:12px}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dheadbtns{display:flex;gap:8px;flex:none}
 .fld textarea{min-height:56px;max-height:40vh;resize:vertical;overflow:auto}
 dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:660px;width:92%;box-shadow:0 24px 64px #00000022}
 dialog::backdrop{background:#1d201e59}
@@ -423,12 +424,8 @@ main a:hover{border-bottom-color:var(--accent)}
 
 <!-- ============ FORM DIALOG ============ -->
 <dialog id="dlg">
-  <div class="dhead" id="dtitle">Edit: S-01 'Warm Apricot'</div>
-  <form class="f" method="dialog" onsubmit="saveEntry(event)">
-    <div class="formactions">
-      <button type="button" class="btn" onclick="dlg.close()">Cancel</button>
-      <button type="submit" class="btn pri">Save</button>
-    </div>
+  <div class="dhead"><span id="dtitle">Add seedling</span><span class="dheadbtns"><button type="button" class="btn" onclick="dlg.close()">Cancel</button><button type="submit" form="entryform" class="btn pri">Save</button></span></div>
+  <form class="f" id="entryform" method="dialog" onsubmit="saveEntry(event)">
     <input type="hidden" id="f_id">
     <div class="frow">
       <div class="fld"><label>Name / ID *</label><input id="f_name" required="" placeholder="e.g. S-01 'Ember'"></div>
@@ -495,7 +492,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='39';
+const APP_VERSION='40';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
