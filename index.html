@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en"><head><script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Abutilon Seedling Journal",
+  "schemaVersion": 1,
+  "description": "Interactive Abutilon (flowering maple) seedling journal: trait data entry with visual cards, illustrated ID glossary, genetics primer, and parent-plant ID guide. Data persists in the page."
+}
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abutilon Seedling Journal</title>
+<style>
+:root { color-scheme: light;
+  --bg:#fafaf8; --card:#ffffff; --ink:#1d201e; --muted:#767b74; --line:#e8e7e2;
+  --accent:#8a1c2b; --accent2:#c9a227; --leaf:#4a7c59; --soft:#f4f4f0;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;font-size:14px;-webkit-font-smoothing:antialiased}
+.sans{font-family:inherit}
+header{padding:26px 32px 0;border-bottom:1px solid var(--line);background:var(--card)}
+h1{margin:0;font-size:19px;font-weight:650;letter-spacing:-.01em}
+h1 .lat{font-style:italic;font-weight:400;color:var(--muted);font-size:14px;margin-left:10px}
+.sub{color:var(--muted);font-size:12.5px;margin:4px 0 18px}
+nav{display:flex;gap:26px;flex-wrap:wrap}
+nav button{font-family:inherit;font-size:13.5px;padding:10px 1px;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);cursor:pointer;letter-spacing:.01em}
+nav button:hover{color:var(--ink)}
+nav button.on{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+main{max-width:960px;margin:0 auto;padding:28px 32px 80px}
+.tab{display:none}.tab.on{display:block}
+h2{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.14em;color:var(--ink);margin:38px 0 14px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+h3{font-size:14px;font-weight:600;margin:24px 0 8px}
+p{margin:8px 0;font-size:14px}
+.note{background:var(--soft);border-left:2px solid var(--accent);border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;margin:14px 0}
+.grid{display:grid;gap:12px}
+.g3{grid-template-columns:repeat(auto-fill,minmax(215px,1fr))}
+.g2{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 14px;text-align:center}
+.tile svg{display:block;margin:0 auto 10px}
+.tile b{display:block;font-size:13px;font-weight:600;margin-bottom:2px}
+.tile span{font-size:12px;color:var(--muted);line-height:1.5}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card)}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1.5px solid #d8d7d1}
+.sw{display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #0002;vertical-align:-2px;margin-right:5px}
+/* journal */
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 20px}
+.btn{font-family:inherit;font-size:13px;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font-weight:500}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:hover{filter:brightness(.97)}
+.cards{display:flex;flex-direction:column;gap:14px;max-width:820px}
+.cards.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));max-width:none;align-items:start}
+.cards.grid .card.hasphotos{display:block}
+.cards.grid .photocol{flex-direction:row;height:100px;margin-bottom:12px;overflow:hidden}
+.cards.grid .photocol img{min-height:0;min-width:0;width:auto;height:100px}
+.grip{position:absolute;top:8px;right:10px;cursor:grab;color:#c9c7c0;font-size:13px;line-height:1;user-select:none;letter-spacing:1px;padding:2px 4px}
+.grip:hover{color:var(--muted)}
+.card.dragging{opacity:.45}
+.card.droptarget{outline:2px dashed var(--accent);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;position:relative}
+.card h3{margin:0 0 2px;font-size:15.5px;font-weight:650;letter-spacing:-.01em}
+.card .meta{font-size:12px;color:var(--muted);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.card .viz{float:right;margin:-2px 0 8px 18px}
+.card.hasphotos{display:grid;grid-template-columns:232px 1fr;gap:22px;align-items:stretch}
+.photocol{display:flex;flex-direction:column;gap:8px}
+.photocol img{width:100%;flex:1 1 0;min-height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.cardbody{min-width:0}
+.traitline{font-size:13px;margin:5px 0;padding-bottom:5px;border-bottom:1px solid #f2f1ed}
+.traitline:last-of-type{border-bottom:none}
+.traitline b{color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.09em;display:inline-block;min-width:86px}
+.chip{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 8px;font-size:12px;margin:1px 3px 1px 0}
+.cardbtns{margin-top:14px;display:flex;gap:8px}
+.cardbtns .btn{font-size:12px;padding:4px 11px}
+.logs{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.logs div{font-size:12.5px;margin:3px 0;color:var(--ink)}
+.logs .d{color:var(--muted);font-size:11px;margin-right:8px;font-variant-numeric:tabular-nums}
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:660px;width:92%;box-shadow:0 24px 64px #00000022}
+dialog::backdrop{background:#1d201e59}
+.dhead{background:var(--card);border-bottom:1px solid var(--line);padding:16px 22px;font-weight:650;font-size:15px}
+form.f{padding:18px 22px 22px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+.fld{display:flex;flex-direction:column;margin-bottom:10px}
+.fld label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px;font-weight:600}
+.fld input,.fld select,.fld textarea{font-family:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:#b9b7ae}
+.fld input[type=color]{padding:2px;height:34px;width:100%}
+.colorrow{display:flex;gap:6px;align-items:center}
+.colorrow input[type=color]{width:44px;flex:none}
+.empty{text-align:center;color:var(--muted);padding:48px 20px;border:1px dashed #d8d7d1;border-radius:10px;font-size:13.5px;max-width:820px}
+#f_photothumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.pthumb{position:relative}
+.pthumb img{width:88px;height:66px;object-fit:cover;border-radius:6px;border:1px solid var(--line);display:block}
+.pthumb button{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:#fff;color:#a33;font-size:11px;line-height:15px;padding:0;cursor:pointer}
+.photorow{display:flex;gap:8px;align-items:center}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1d201e;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80%}
+#toast.on{opacity:.95}
+#bigbanner{position:sticky;top:0;z-index:60;background:#8a1c2b;color:#fff;padding:10px 22px;font-size:13.5px;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+#bigbanner .btn{background:#fff;color:#8a1c2b;border-color:#fff;padding:3px 11px;font-size:12px}
+.menuwrap{position:relative;display:inline-block}
+.menu{position:absolute;top:calc(100% + 6px);left:0;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px #00000018;min-width:190px;z-index:40;padding:5px}
+.menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 12px;font-family:inherit;font-size:13px;color:var(--ink);border-radius:6px;cursor:pointer}
+.menu button:hover{background:var(--soft)}
+.menu button.pri{background:var(--accent);color:#fff}
+#authpanel{background:var(--soft);border-left:2px solid var(--accent);border-radius:0 8px 8px 0;padding:14px 16px;margin:0 0 16px;max-width:820px}
+#authpanel b{display:block;font-size:13px;margin-bottom:8px}
+.authrow{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.authrow input{font-family:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;flex:1;min-width:180px}
+#verbadge{display:inline-block;background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:1px 9px;font-size:11px;font-weight:600;margin-left:10px;vertical-align:1px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.step{position:relative;padding-top:18px}
+.step .n{position:absolute;top:10px;left:10px;background:var(--card);border:1.5px solid var(--accent);color:var(--accent);width:22px;height:22px;border-radius:50%;font-size:11.5px;line-height:19px;text-align:center;font-weight:650}
+.punnett{border-collapse:collapse;margin:10px 0;width:auto}
+.punnett td,.punnett th{border:1px solid var(--line);width:130px;height:44px;text-align:center;font-size:12.5px;padding:6px}
+.small{font-size:12.5px;color:var(--muted)}
+main a{color:var(--accent);text-decoration:none;border-bottom:1px solid #dcc3c7}
+main a:hover{border-bottom-color:var(--accent)}
+.tilephoto{width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;cursor:zoom-in;display:none}
+.formviz svg{display:block;margin:0 auto 6px}
+#refdlg{border:none;border-radius:10px;padding:0;background:#111;max-width:min(92vw,760px)}
+#refdlg img{max-width:100%;max-height:78vh;display:block}
+#refdlg .cap{color:#fff;font-size:12.5px;padding:9px 14px}
+.legendrow{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0}
+@media(max-width:680px){
+  header{padding:16px 14px 0}
+  h1{font-size:16.5px}
+  h1 .lat{display:block;margin:2px 0 0}
+  main{padding:18px 14px 60px}
+  nav{gap:18px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  nav button{white-space:nowrap;padding:10px 1px}
+  .bar{gap:6px}
+  .btn{padding:8px 12px}
+  table{display:block;overflow-x:auto;white-space:normal}
+  .frow{grid-template-columns:1fr}
+  .card{padding:14px}
+  .card.hasphotos{grid-template-columns:1fr;gap:12px}
+  .photocol{flex-direction:column}
+  .photocol img{flex:0 0 auto;min-height:0;min-width:0;width:100%;height:auto}
+  .cards.grid .photocol{flex-direction:column;height:auto;margin-bottom:10px}
+  .cards.grid .photocol img{width:100%;height:auto}
+  .card .viz{margin-left:8px}
+  dialog{width:96%}
+  .cards.grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Flowering Maple Seedling Journal <span class="lat">Abutilon (Callianthe)</span></h1>
+  <div class="sub">Identification guide, trait catalogue &amp; breeding notebook — Dan's yard population <span id="verbadge">v25 · live artifact</span></div>
+  <nav id="nav">
+    <button data-t="journal" class="on">Journal</button>
+    <button data-t="glossary" class="">Trait Glossary</button>
+    <button data-t="prop" class="">Propagation</button>
+    <button data-t="genetics" class="">Genetics</button>
+    <button data-t="parent" class="">Parent ID</button>
+  </nav>
+</header>
+<main>
+
+<!-- ============ JOURNAL ============ -->
+<section class="tab on" id="tab-journal">
+  <div class="bar">
+    <button class="btn pri" onclick="openForm()">＋ Add seedling</button>
+    <button class="btn" id="viewtoggle" onclick="toggleView()">Grid view</button>
+    <button class="btn" onclick="syncNow()">Sync now</button>
+    <div class="menuwrap">
+      <button class="btn" id="morebtn" onclick="toggleMenu(event)" title="Archive & data tools">⋯</button>
+      <div id="moremenu" class="menu" style="display:none">
+        <button id="savebtn" onclick="savePortable()" title="Downloads a single .html snapshot — app plus data, works offline anywhere.">Save journal file</button>
+        <button onclick="exportJSON()">Export data (.json)</button>
+        <button onclick="document.getElementById('importfile').click()">Import data</button>
+        <button id="signoutbtn" style="display:none" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+    <input type="file" id="importfile" accept=".json" style="display:none" onchange="importJSON(event)">
+    <span class="small" id="count">1 plant catalogued</span> <span class="small" id="savestate"></span> <span class="small" id="syncstate"></span> <span class="small" id="authstate"></span>
+  </div>
+  <div id="authpanel" style="display:none">
+    <b>Sign in to sync</b>
+    <div class="authrow">
+      <input id="auth_email" type="email" placeholder="you@example.com" autocomplete="email">
+      <button class="btn" onclick="sendLink()">Email me a sign-in link</button>
+    </div>
+    <div class="authrow">
+      <input id="auth_code" inputmode="numeric" placeholder="6-digit code from the email">
+      <button class="btn" onclick="verifyCode()">Verify code</button>
+    </div>
+    <span class="small" id="authmsg">Entries stay on this device until you sign in.</span>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div class="empty" id="empty" style="display:none">No seedlings yet. Click <b>＋ Add seedling</b> to start your catalogue.<br>Tip: add the mother tree first so every seedling can be compared against it.</div>
+</section>
+
+<!-- ============ GLOSSARY ============ -->
+<section class="tab" id="tab-glossary">
+  <h2>Flower form — the aperture ladder</h2>
+  <p>The single most diagnostic trait in Abutilon: <b>how open the flower is</b>, from sealed tube to flat dish, ordered as a ladder built from Monterey Bay Nursery's cultivar vocabulary. The pinched <b>waist</b> gets its own step because it marks the <i>megapotamicum</i> line. Some plants span a range flower-to-flower (<a href="https://www.montereybaynursery.com/A/abutilon_twister1.jpg" target="_blank">'Twister'</a> runs partially-flared to fully flat) — record a range if you see one. Form is petal silhouette only; calyx and stamens are scored separately.</p>
+  <div class="grid g3">
+    <div class="tile"><span class="formviz" data-form="tubular / barely open" data-p="#dd7350" data-c="#6b2018" data-s="#d9a441"><svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"></path><path d="M-9 26 C-13 38 -20 50 -24 62 C-28 78 -22 92 -9 98 L-6 92 C-2 96 2 96 6 92 L9 98 C22 92 28 78 24 62 C20 50 13 38 9 26 C4 29 -4 29 -9 26 Z" fill="#dd7350"></path><path d="M-4 30 C-9 50 -11 72 -6 92 M5 31 C9 52 10 74 6 92" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><path d="M0 0 C-6 0 -10 3 -12 8 C-13 14 -13 20 -12 26 L-8 33 L-4 28 L0 34 L4 28 L8 33 L12 26 C13 20 13 14 12 8 C10 3 6 0 0 0 Z" fill="#6b2018"></path><path d="M-5 2 C-6 11 -6 20 -5 28 M5 2 C6 11 6 20 5 28" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><line x1="0" y1="96" x2="0" y2="104" stroke="#d9a441" stroke-width="2" stroke-linecap="round"></line><g fill="#d9a441"><circle cx="0" cy="107" r="2.1"></circle><circle cx="-3" cy="105" r="1.6"></circle><circle cx="3" cy="105" r="1.6"></circle></g></svg></span><img class="tilephoto" data-refimg="souv_de_bonn" alt="'Souvenir de Bonn'"><b>1 · Tubular / barely open</b><span>"Very narrow, barely opening." Exemplar: <a href="https://www.montereybaynursery.com/A/abutilon_souv_de_bonn1.jpg" target="_blank">'Souvenir de Bonn'</a>.</span></div>
+    <div class="tile"><span class="formviz" data-form="waisted lantern" data-p="#e8b23c" data-c="#5a1f2e" data-s="#b3801f"><svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"></path><path d="M-9 44 C-16 52 -26 60 -34 65 C-31 72 -27 79 -21 85 C-17 88 -13 86 -12 82 C-9 86 -5 88 0 88 C5 88 9 86 12 82 C13 86 17 88 21 85 C27 79 31 72 34 65 C26 60 16 52 9 44 C5 46 -5 46 -9 44 Z" fill="#e8b23c"></path><path d="M-4 47 C-8 60 -11 72 -12 81 M6 47 C9 60 11 71 12 81" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><path d="M0 0 C-13 1 -21 8 -22 18 C-23 26 -21 33 -17 39 C-16 43 -17 47 -18 50 C-14 49 -11 46 -9 42 C-6 45 -3 47 0 47 C3 47 6 45 9 42 C11 46 14 49 18 50 C17 47 16 43 17 39 C21 33 23 26 22 18 C21 8 13 1 0 0 Z" fill="#5a1f2e"></path><path d="M-10 4 C-13 15 -12 28 -9 39 M0 2 L0 45 M10 4 C13 15 12 28 9 39" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><line x1="0" y1="88" x2="0" y2="95" stroke="#b3801f" stroke-width="1.8" stroke-linecap="round"></line><path d="M0 95 L-4 98 M0 95 L-2 101 M0 95 L2 101 M0 95 L4 98" stroke="#b3801f" stroke-width=".9" fill="none" stroke-linecap="round"></path><g fill="#b3801f"><circle cx="-4" cy="99" r="2"></circle><circle cx="-1.5" cy="102" r="2"></circle><circle cx="2" cy="102" r="2"></circle><circle cx="4.5" cy="98" r="2"></circle></g></svg></span><img class="tilephoto" data-refimg="challo" alt="'Challo'"><b>2 · Waisted lantern</b><span>Inflated body constricts at the waist, then a skirt flares below. Exemplars: <a href="https://www.montereybaynursery.com/A/abutilon_challo1.jpg" target="_blank">'Challo'</a>, <a href="https://www.montereybaynursery.com/A/abutilon_sunset1.jpg" target="_blank">'Sunset'</a>, <a href="https://www.montereybaynursery.com/A/abutilon_victory1.jpg" target="_blank">'Victory'</a>. Megapotamicum-line marker.</span></div>
+    <div class="tile"><span class="formviz" data-form="bell-shaped" data-p="#dd6a48" data-c="#5f2433" data-s="#4a1420"><svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"></path><path d="M-17 20 C-24 26 -36 36 -46 50 C-52 60 -55 74 -54 83 C-50 87 -45 86 -42 82 C-35 89 -26 92 -17 93 C-11 94 -5 94 0 94 C5 94 11 94 17 93 C26 92 35 89 42 82 C45 86 50 87 54 83 C55 74 52 60 46 50 C36 36 24 26 17 20 C10 22 -10 22 -17 20 Z" fill="#dd6a48"></path><path d="M-7 24 C-18 42 -32 64 -42 81 M4 24 C8 48 12 72 17 92" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><path d="M0 0 C-9 0 -14 2 -16 6 C-16.8 10 -16.9 15 -17 20 L-11 27 L-6 22 L0 29 L6 22 L11 27 L17 20 C16.9 15 16.8 10 16 6 C14 2 9 0 0 0 Z" fill="#5f2433"></path><path d="M-6.5 1.5 C-8 8 -8.3 14 -8 20 M0 1 L0 27 M6.5 1.5 C8 8 8.3 14 8 20" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><line x1="0" y1="94" x2="0" y2="98" stroke="#4a1420" stroke-width="1.8" stroke-linecap="round"></line><path d="M0 98 L-4 101 M0 98 L-2 104 M0 98 L2 104 M0 98 L4 101" stroke="#4a1420" stroke-width=".9" fill="none" stroke-linecap="round"></path><g fill="#4a1420"><circle cx="-4" cy="102" r="2"></circle><circle cx="-1.5" cy="105" r="2"></circle><circle cx="2" cy="105" r="2"></circle><circle cx="4.5" cy="101" r="2"></circle></g></svg></span><img class="tilephoto" data-refimg="sangria" alt="'Sangria'"><b>3 · Bell-shaped</b><span>The classic hanging bell; length ≈ width, mouth half-open. Exemplar: <a href="https://www.montereybaynursery.com/A/abutilon_sangria1.jpg" target="_blank">'Sangria'</a>. <b>Your mother tree.</b></span></div>
+    <div class="tile"><span class="formviz" data-form="partially flared" data-p="#e3aa35" data-c="#5f2433" data-s="#b3801f"><svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"></path><path d="M-17 20 C-22 30 -34 44 -45 60 C-51 68 -55 76 -54 83 C-50 87 -45 86 -42 82 C-35 89 -26 92 -17 93 C-11 94 -5 94 0 94 C5 94 11 94 17 93 C26 92 35 89 42 82 C45 86 50 87 54 83 C55 76 51 68 45 60 C34 44 22 30 17 20 C10 22 -10 22 -17 20 Z" fill="#e3aa35"></path><path d="M-7 24 C-18 42 -32 64 -42 81 M4 24 C8 48 12 72 17 92" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><path d="M0 0 C-9 0 -14 2 -16 6 C-16.8 10 -16.9 15 -17 20 L-11 27 L-6 22 L0 29 L6 22 L11 27 L17 20 C16.9 15 16.8 10 16 6 C14 2 9 0 0 0 Z" fill="#5f2433"></path><path d="M-6.5 1.5 C-8 8 -8.3 14 -8 20 M0 1 L0 27 M6.5 1.5 C8 8 8.3 14 8 20" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><line x1="0" y1="94" x2="0" y2="100" stroke="#b3801f" stroke-width="1.8" stroke-linecap="round"></line><path d="M0 100 L-4 103 M0 100 L-2 106 M0 100 L2 106 M0 100 L4 103" stroke="#b3801f" stroke-width=".9" fill="none" stroke-linecap="round"></path><g fill="#b3801f"><circle cx="-4" cy="104" r="2"></circle><circle cx="-1.5" cy="107" r="2"></circle><circle cx="2" cy="107" r="2"></circle><circle cx="4.5" cy="103" r="2"></circle></g></svg></span><img class="tilephoto" data-refimg="frieda" alt="'Frieda'"><b>4 · Partially flared</b><span>Mouth opens noticeably; sides still curve inward. Exemplar: <a href="https://www.montereybaynursery.com/A/abutilon_frieda1.jpg" target="_blank">'Frieda'</a>.</span></div>
+    <div class="tile"><span class="formviz" data-form="globe / rounded" data-p="#d98aa6" data-c="#7d8d74" data-s="#d9a441"><svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"></path><path d="M-16 17 C-28 22 -38 32 -41 46 C-43 58 -38 70 -28 78 C-23 82 -17 84 -12 84 C-10 82 -10 79 -12 77 C-7 80 7 80 12 77 C10 79 10 82 12 84 C17 84 23 82 28 78 C38 70 43 58 41 46 C38 32 28 22 16 17 C10 19 -10 19 -16 17 Z" fill="#d98aa6"></path><path d="M-7 19 C-18 36 -20 58 -12 76 M6 19 C15 34 17 56 11 76" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><path d="M0 0 C-8 0 -13 2 -15 6 C-16 9 -16.5 13 -16 17 L-10 23 L-5 18 L0 25 L5 18 L10 23 L16 17 C16.5 13 16 9 15 6 C13 2 8 0 0 0 Z" fill="#7d8d74"></path><path d="M-6 1.5 C-7.5 7 -7.8 12 -7.5 17 M6 1.5 C7.5 7 7.8 12 7.5 17" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path></svg></span><img class="tilephoto" data-refimg="rosalie" alt="'Rosalie'"><b>5 · Globe / rounded</b><span>"More or less globe shaped" — petals arc back inward, ball-like. Exemplar: <a href="https://www.montereybaynursery.com/A/abutilon_rosalie1.jpg" target="_blank">'Rosalie'</a>.</span></div>
+    <div class="tile"><span class="formviz" data-form="widely flared" data-p="#b85c80" data-c="#5f2433" data-s="#d98a41"><svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"></path><path d="M-17 20 C-30 24 -46 32 -58 44 C-63 49 -64 54 -62 57 C-58 61 -52 60 -50 56 C-44 62 -36 66 -28 67 C-23 68 -19 66 -19 62 C-13 66 -6 68 0 68 C6 68 13 66 19 62 C19 66 23 68 28 67 C36 66 44 62 50 56 C52 60 58 61 62 57 C64 54 63 49 58 44 C46 32 30 24 17 20 C10 22 -10 22 -17 20 Z" fill="#b85c80"></path><path d="M-8 23 C-22 33 -37 45 -49 55 M0 24 C-4 38 -11 52 -18 61 M9 23 C15 36 18 50 19 61" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><path d="M0 0 C-9 0 -14 2 -16 6 C-16.8 10 -16.9 15 -17 20 L-11 27 L-6 22 L0 29 L6 22 L11 27 L17 20 C16.9 15 16.8 10 16 6 C14 2 9 0 0 0 Z" fill="#5f2433"></path><path d="M-6.5 1.5 C-8 8 -8.3 14 -8 20 M0 1 L0 27 M6.5 1.5 C8 8 8.3 14 8 20" stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"></path><line x1="0" y1="68" x2="0" y2="77" stroke="#d98a41" stroke-width="1.8" stroke-linecap="round"></line><path d="M0 77 L-4 80 M0 77 L-2 83 M0 77 L2 83 M0 77 L4 80" stroke="#d98a41" stroke-width=".9" fill="none" stroke-linecap="round"></path><g fill="#d98a41"><circle cx="-4" cy="81" r="2"></circle><circle cx="-1.5" cy="84" r="2"></circle><circle cx="2" cy="84" r="2"></circle><circle cx="4.5" cy="80" r="2"></circle></g></svg></span><img class="tilephoto" data-refimg="pink_parasol" alt="'Pink Parasol'"><b>6 · Widely flared</b><span>Petals flare wide, approaching horizontal. Exemplar: <a href="https://www.montereybaynursery.com/A/abutilon_pink_parasol1.jpg" target="_blank">'Pink Parasol'</a>.</span></div>
+    <div class="tile"><span class="formviz" data-form="flat / fully open" data-p="#e08444" data-c="#7d8d74" data-s="#d9a441"><svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"></path><g transform="translate(0,45)"><g transform="rotate(0)"><path d="M0 0 C-14 -6 -24 -18 -25 -33 C-24 -44 -18 -50 -10 -51 C-6 -54 -2 -52 0 -53 C2 -52 6 -54 10 -51 C18 -50 24 -44 25 -33 C24 -18 14 -6 0 0 Z" fill="#e08444" stroke="rgba(0,0,0,.2)" stroke-width="1"></path></g><g transform="rotate(72)"><path d="M0 0 C-14 -6 -24 -18 -25 -33 C-24 -44 -18 -50 -10 -51 C-6 -54 -2 -52 0 -53 C2 -52 6 -54 10 -51 C18 -50 24 -44 25 -33 C24 -18 14 -6 0 0 Z" fill="#e08444" stroke="rgba(0,0,0,.2)" stroke-width="1"></path></g><g transform="rotate(144)"><path d="M0 0 C-14 -6 -24 -18 -25 -33 C-24 -44 -18 -50 -10 -51 C-6 -54 -2 -52 0 -53 C2 -52 6 -54 10 -51 C18 -50 24 -44 25 -33 C24 -18 14 -6 0 0 Z" fill="#e08444" stroke="rgba(0,0,0,.2)" stroke-width="1"></path></g><g transform="rotate(216)"><path d="M0 0 C-14 -6 -24 -18 -25 -33 C-24 -44 -18 -50 -10 -51 C-6 -54 -2 -52 0 -53 C2 -52 6 -54 10 -51 C18 -50 24 -44 25 -33 C24 -18 14 -6 0 0 Z" fill="#e08444" stroke="rgba(0,0,0,.2)" stroke-width="1"></path></g><g transform="rotate(288)"><path d="M0 0 C-14 -6 -24 -18 -25 -33 C-24 -44 -18 -50 -10 -51 C-6 -54 -2 -52 0 -53 C2 -52 6 -54 10 -51 C18 -50 24 -44 25 -33 C24 -18 14 -6 0 0 Z" fill="#e08444" stroke="rgba(0,0,0,.2)" stroke-width="1"></path></g><circle r="13" fill="rgba(255,255,255,.35)"></circle><path d="M0 0 L-8 -6 M0 0 L-9 3 M0 0 L-4 9 M0 0 L4 9 M0 0 L9 3 M0 0 L8 -6 M0 0 L0 -10" stroke="#d9a441" stroke-width="1" fill="none" stroke-linecap="round"></path><g fill="#d9a441"><circle cx="-8" cy="-6" r="1.7"></circle><circle cx="-9" cy="3" r="1.7"></circle><circle cx="-4" cy="9" r="1.7"></circle><circle cx="4" cy="9" r="1.7"></circle><circle cx="9" cy="3" r="1.7"></circle><circle cx="8" cy="-6" r="1.7"></circle><circle r="3"></circle></g></g></svg></span><img class="tilephoto" data-refimg="victor_reiter" alt="'Victor Reiter'"><b>7 · Flat / fully open</b><span>"Very wide, very open" — petals essentially horizontal. Exemplar: <a href="https://www.montereybaynursery.com/A/abutilon_victor_reiter1.jpg" target="_blank">'Victor Reiter'</a>.</span></div>
+  </div>
+  <p class="small">Step 0 is "not yet bloomed." Drawings locked from our shape-review session. Cultivar links open Monterey Bay Nursery's reference photos (internet required); journal card icons render these same seven shapes in each plant's recorded petal, calyx, and stamen colors.</p>
+
+  <h3>Petal edge</h3>
+  <div class="grid g3">
+    <div class="tile"><svg width="90" height="44" viewBox="0 0 90 44"><path d="M8 30 C30 18 60 18 82 30" fill="none" stroke="#8a1c2b" stroke-width="2.5"></path></svg><b>Smooth</b><span>Even, unbroken margin.</span></div>
+    <div class="tile"><svg width="90" height="44" viewBox="0 0 90 44"><path d="M8 28 C14 22 18 32 24 26 C30 20 34 32 40 25 C46 19 52 31 58 24 C64 18 70 30 76 24 C79 21 81 26 82 24" fill="none" stroke="#8a1c2b" stroke-width="2.5"></path></svg><b>Ruffled</b><span>Irregular waviness, loose and informal (<a href="https://www.montereybaynursery.com/A/abutilon_frieda1.jpg" target="_blank">'Frieda'</a>, <a href="https://www.montereybaynursery.com/A/abutilon_pink_parasol1.jpg" target="_blank">'Pink Parasol'</a>).</span></div>
+    <div class="tile"><svg width="90" height="44" viewBox="0 0 90 44"><path d="M8 26 Q13 16 18 26 Q23 36 28 26 Q33 16 38 26 Q43 36 48 26 Q53 16 58 26 Q63 36 68 26 Q73 16 78 26" fill="none" stroke="#8a1c2b" stroke-width="2.5"></path></svg><b>Fluted</b><span>Regular, even channels — like pie crust (<a href="https://www.montereybaynursery.com/A/abutilon_cristina1.jpg" target="_blank">'Cristina'</a>).</span></div>
+    <div class="tile"><svg width="90" height="44" viewBox="0 0 90 44"><path d="M8 30 L16 18 L24 30 L32 18 L40 30 L48 18 L56 30 L64 18 L72 30 L80 18" fill="none" stroke="#8a1c2b" stroke-width="2.5"></path></svg><b>Pleated</b><span>Sharp, creased folds (<a href="https://www.montereybaynursery.com/A/abutilon_challo1.jpg" target="_blank">'Challo'</a> — even its buds are pleated).</span></div>
+    <div class="tile"><svg width="90" height="44" viewBox="0 0 90 44"><path d="M8 28 C30 20 55 20 66 24 C74 27 76 34 70 36 C64 38 62 30 70 26 C74 24 79 24 82 25" fill="none" stroke="#8a1c2b" stroke-width="2.5"></path></svg><b>Twisted</b><span>One edge curls back, showing the petal's interior color (<a href="https://www.montereybaynursery.com/A/abutilon_twister1.jpg" target="_blank">'Twister'</a>).</span></div>
+    <div class="tile"><svg width="90" height="44" viewBox="0 0 90 44"><path d="M8 30 C30 18 60 18 82 30" fill="none" stroke="#8a1c2b" stroke-width="4"></path><path d="M8 30 C30 18 60 18 82 30" fill="none" stroke="#e8c84a" stroke-width="1.2"></path></svg><b>Edged (light line)</b><span>A fine, pale line traces the margin (<a href="https://www.montereybaynursery.com/A/abutilon_cristina1.jpg" target="_blank">'Cristina'</a>).</span></div>
+  </div>
+
+  <h3>Size, substance, finish, posture &amp; pattern</h3>
+  <table>
+    <tbody><tr><th>Axis</th><th>Scale</th><th>How to tell</th></tr>
+    <tr><td>Size</td><td>small &lt;1.5″ · medium 1.5–2.5″ · large 2.5–3″ · very large 3″+</td><td>Measure across the open mouth, face-on.</td></tr>
+    <tr><td>Substance</td><td>thin/translucent ↔ medium ↔ heavy/waxy</td><td>Backlight a petal: thin glows through; heavy blocks light, feels thick, and holds its color in full sun (<a href="https://www.montereybaynursery.com/A/abutilon_jerrys_red_wax1.jpg" target="_blank">'Jerry's Red Wax'</a>).</td></tr>
+    <tr><td>Finish</td><td>matte/clear · glossy/shiny ("lacquer") · glowing/luminous · silvery</td><td>Glossy throws a sharp reflected highlight; glowing looks lit from within with no highlight; silvery is a pale sheen over the base color (<a href="https://www.montereybaynursery.com/A/abutilon_harvest_moon1.jpg" target="_blank">'Harvest Moon'</a>).</td></tr>
+    <tr><td>Posture</td><td>very pendant → pendant → semi-pendant → horizontal → upfacing</td><td>Angle of the flower's axis. Also note the peduncle (flower stalk): long + thin + wiry gives the "floating in midair" look (<a href="https://www.montereybaynursery.com/A/abutilon_pablos_tangelo1.jpg" target="_blank">'Pablo's Tangelo'</a>).</td></tr>
+    <tr><td>Pattern</td><td>self · dark eye · lighter center · flushed base · edged margin (veining is its own field)</td><td>Look straight into the mouth for an eye or pale center.</td></tr>
+    <tr><td>Doubling</td><td>single · partially doubled · fully double</td><td>Extra petal whorls inside the main skirt (<a href="https://www.montereybaynursery.com/A/abutilon_pink_parasol1.jpg" target="_blank">'Pink Parasol'</a> partial, <a href="https://www.montereybaynursery.com/A/abutilon_victorian_lady1.jpg" target="_blank">'Victorian Lady'</a> full).</td></tr>
+    <tr><td>Aging</td><td>free note</td><td>Compare a first-day flower with one about to drop — many cultivars shift (yellow → apricot on <a href="https://www.montereybaynursery.com/A/abutilon_sunset1.jpg" target="_blank">'Sunset'</a>; silvery apricot → pale melon on <a href="https://www.montereybaynursery.com/A/abutilon_harvest_moon1.jpg" target="_blank">'Harvest Moon'</a>). Distinct from sun-fading.</td></tr>
+  </tbody></table>
+  <p class="small">Buds are ornamental in their own right — silky, velvety, or sculpted/pleated pod-like buds are worth a note. Your mother's fat dusky pods qualify. Vocabulary source: <a href="https://montereybaynsy.com/plants.php" target="_blank">Monterey Bay Nursery plant descriptions</a>.</p>
+
+  <h3>Calyx — score shape, color, and size as separate traits</h3>
+  <p class="small">These three axes vary independently and recombine in seedlings: a calyx can be green <i>and</i> flared, red <i>and</i> tiny, inflated <i>and</i> flushed. The shapes below are drawn colorless on purpose — record color and size alongside. (Ghost petals shown for scale.)</p>
+  <div class="grid g3">
+    <div class="tile"><svg width="96" height="100" viewBox="0 0 100 100"><defs><linearGradient id="cshT" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a7b39d"></stop><stop offset="1" stop-color="#77876c"></stop></linearGradient></defs><line x1="50" y1="2" x2="50" y2="10" stroke="#9aa08c" stroke-width="2"></line><path d="M50 10 C45 11 43 13 42.5 16 C42 28 42.5 40 44.5 50 L50 53 L55.5 50 C57.5 40 58 28 57.5 16 C57 13 55 11 50 10Z" fill="url(#cshT)"></path><path d="M45.5 13 C45 25 45.5 38 47 49 M50 11 L50 53 M54.5 13 C55 25 54.5 38 53 49" stroke="rgba(0,0,0,.2)" stroke-width="1" fill="none"></path><path d="M45 51 C44 62 44 72 46 80 C48 83 52 83 54 80 C56 72 56 62 55 51 C52 53 48 53 45 51Z" fill="#e2dccd" stroke="#c9c2b0"></path></svg><b>Shape: tight / clasping</b><span>Sepals hug the petal base, tips pointing down along it — your mother's shape (dusky maroon, medium-sized).</span></div>
+    <div class="tile"><svg width="96" height="100" viewBox="0 0 100 100"><defs><linearGradient id="cshF" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a7b39d"></stop><stop offset="1" stop-color="#77876c"></stop></linearGradient></defs><line x1="50" y1="2" x2="50" y2="10" stroke="#9aa08c" stroke-width="2"></line><path d="M50 10 C45 11 43 13 42.5 16 C41 27 36 38 29 45 L36 43 C41 47 45 49 50 50 C55 49 59 47 64 43 L71 45 C64 38 59 27 57.5 16 C57 13 55 11 50 10Z" fill="url(#cshF)"></path><path d="M44 14 C42 26 38 37 32 44 M50 11 L50 50 M56 14 C58 26 62 37 68 44" stroke="rgba(0,0,0,.2)" stroke-width="1" fill="none"></path><path d="M45 49 C44 60 44 70 46 78 C48 81 52 81 54 78 C56 70 56 60 55 49 C52 51 48 51 45 49Z" fill="#e2dccd" stroke="#c9c2b0"></path></svg><b>Shape: flared / reflexed</b><span>Sides sweep outward, sepal tips curling back.</span></div>
+    <div class="tile"><svg width="96" height="100" viewBox="0 0 100 100"><defs><linearGradient id="cshI" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a7b39d"></stop><stop offset="1" stop-color="#77876c"></stop></linearGradient></defs><line x1="50" y1="2" x2="50" y2="8" stroke="#9aa08c" stroke-width="2"></line><path d="M50 8 C38 10 32 19 32 31 C32 42 38 50 44 54 L50 57 L56 54 C62 50 68 42 68 31 C68 19 62 10 50 8Z" fill="url(#cshI)"></path><path d="M40 12 C36 21 36 40 42 51 M50 9 L50 57 M60 12 C64 21 64 40 58 51 M45 9.5 C42 21 42 42 47 54 M55 9.5 C58 21 58 42 53 54" stroke="rgba(0,0,0,.2)" stroke-width="1" fill="none"></path><path d="M46 56 C45 64 45 71 47 77 C48.5 80 51.5 80 53 77 C55 71 55 64 54 56 C51 58 49 58 46 56Z" fill="#e2dccd" stroke="#c9c2b0"></path></svg><b>Shape: inflated / ribbed</b><span>Balloon with keeled ribs, pinching in where the petals emerge (straight <i>megapotamicum</i>).</span></div>
+  </div>
+  <div class="note"><b>Color axis:</b> <span class="sw" style="background:#6b8f5e"></span>green → <span class="sw" style="background:#a86a52"></span>flushed → <span class="sw" style="background:#5f2433"></span>dusky maroon (your mother's) → <span class="sw" style="background:#8a1c2b"></span>bright red — independent of shape. &nbsp;·&nbsp; <b>Size axis:</b> small (petals dwarf it) ↔ large/showy (rivals the petals) — hers is medium. Also worth scoring: <b>bud color</b> — her fat dusky-maroon buds are an early anthocyanin tell. The Journal form records these separately.</div>
+  <h3>Petals, veining &amp; stamens</h3>
+  <div class="grid g3">
+    <div class="tile"><svg width="80" height="60" viewBox="0 0 80 60"><ellipse cx="40" cy="30" rx="30" ry="24" fill="#f0c04a"></ellipse><path d="M40 6 L40 54 M14 18 L66 42 M14 42 L66 18 M10 30 L70 30" stroke="#b23a2f" stroke-width="2"></path></svg><b>Contrast veining</b><span>Darker veins over a lighter petal ground. Your mother shows this strongly — dark red veins on orange-red. Record: none / subtle / strong.</span></div>
+    <div class="tile"><svg width="80" height="60" viewBox="0 0 80 60"><line x1="40" y1="6" x2="40" y2="38" stroke="#7a1424" stroke-width="5"></line><circle cx="34" cy="42" r="4" fill="#7a1424"></circle><circle cx="46" cy="42" r="4" fill="#7a1424"></circle><circle cx="40" cy="48" r="4" fill="#7a1424"></circle><circle cx="31" cy="34" r="3.5" fill="#7a1424"></circle><circle cx="49" cy="34" r="3.5" fill="#7a1424"></circle></svg><b>Staminal column</b><span>Mallow-family fused stamen tube. Color (pale yellow vs. dark red like your mother's) and how far it protrudes are heritable — hers sits as a dark cluster right at the mouth.</span></div>
+    <div class="tile"><svg width="80" height="60" viewBox="0 0 80 60"><ellipse cx="26" cy="30" rx="15" ry="22" fill="#d98a3c"></ellipse><ellipse cx="54" cy="30" rx="15" ry="22" fill="#d98a3c" opacity=".85"></ellipse></svg><b>Petal overlap</b><span>Overlapping (full-skirted) vs. spaced petals with gaps. Also note petal length : width ratio.</span></div>
+  </div>
+
+  <h2>Leaves</h2>
+  <p>"Flowering maple" = maple-like leaves, but lobing varies enormously and is one of the easiest traits to score on seedlings <b>before first bloom</b>. Score four separate axes: <b>primary vein count</b> (veins radiating from the base — 3 / 5 / 7), <b>lobe count</b>, <b>sinus depth</b>, and <b>margin</b>. Each primary vein marks a <i>potential</i> lobe, so lobes ≤ veins — but lobes don't have to develop: your mother is 5-veined with only 3 pronounced lobes (the basal pair barely express). Vein count stays constant across a plant while lobing varies with leaf age and position, so <b>veins are the more reliable count for comparing seedlings</b>.</p>
+  <div class="grid g3">
+    <div class="tile"><svg width="104" height="118" viewBox="0 0 110 118"><defs><linearGradient id="lgU" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f9169"></stop><stop offset="1" stop-color="#3e6b4d"></stop></linearGradient></defs><path data-leaf="unlobed" fill="url(#lgU)" d="M47.8 95.6L46.6 94.8L45.6 94.0L44.7 93.3L43.9 92.6L43.1 91.9L42.4 91.2L41.8 90.5L41.2 89.9L40.6 89.2L40.1 88.6L39.6 87.9L39.1 87.3L38.7 86.7L37.4 85.3L37.0 84.7L36.6 84.0L36.2 83.4L35.8 82.7L35.5 82.1L35.2 81.5L34.9 80.8L34.7 80.2L34.4 79.6L34.2 79.0L33.9 78.3L33.7 77.7L33.5 77.1L32.2 75.3L32.0 74.6L31.9 74.0L31.7 73.4L31.6 72.7L31.5 72.1L31.4 71.5L31.3 70.9L31.2 70.3L31.1 69.7L31.0 69.1L31.0 68.5L30.9 67.9L29.6 65.6L29.6 65.0L29.6 64.4L29.6 63.8L29.6 63.2L29.6 62.6L29.6 62.0L29.6 61.4L29.7 60.8L29.7 60.3L29.8 59.7L29.9 59.2L29.9 58.6L30.0 58.1L28.8 55.3L28.9 54.7L29.0 54.2L29.1 53.6L29.3 53.1L29.4 52.6L29.5 52.1L29.7 51.5L29.8 51.0L30.0 50.6L30.2 50.1L30.3 49.6L30.5 49.1L30.7 48.7L29.6 45.5L29.8 45.0L30.0 44.5L30.3 44.1L30.5 43.6L30.7 43.2L30.9 42.7L31.2 42.3L31.4 41.9L31.7 41.5L31.9 41.1L32.2 40.8L32.5 40.4L31.6 36.9L31.9 36.5L32.1 36.1L32.4 35.8L32.7 35.4L33.0 35.1L33.4 34.7L33.7 34.4L34.0 34.1L34.3 33.8L34.6 33.5L35.0 33.3L35.3 33.0L35.6 32.8L34.9 29.0L35.3 28.7L35.7 28.5L36.0 28.2L36.4 28.0L36.7 27.8L37.1 27.6L37.5 27.4L37.8 27.3L38.2 27.1L38.6 26.9L39.0 26.8L39.3 26.7L39.7 26.6L39.3 22.6L39.7 22.5L40.1 22.4L40.5 22.3L40.9 22.2L41.3 22.1L41.7 22.1L42.1 22.0L42.5 22.0L42.9 22.0L43.3 22.0L43.7 22.0L44.1 22.0L44.0 17.9L44.4 18.0L44.8 18.0L45.3 18.0L45.7 18.1L46.1 18.2L46.5 18.3L46.9 18.4L47.4 18.5L47.8 18.6L48.2 18.7L48.6 18.9L49.0 19.0L49.4 19.2L49.6 15.1L50.0 15.3L50.4 15.5L50.9 15.7L51.3 15.9L51.7 16.1L52.1 16.3L52.6 16.6L53.0 16.9L53.4 17.1L53.8 17.4L54.2 17.7L54.6 18.0L55.0 14.0L55.4 14.3L55.8 14.7L56.2 15.0L56.7 15.3L57.1 15.7L57.5 16.1L57.9 16.5L58.3 16.9L58.6 17.3L59.0 17.7L59.4 18.1L59.8 18.5L60.2 19.0L60.8 15.2L61.2 15.6L61.6 16.1L62.0 16.6L62.3 17.1L62.7 17.6L63.1 18.1L63.4 18.6L63.8 19.1L64.1 19.7L64.5 20.2L64.8 20.7L65.2 21.3L65.5 21.9L66.4 18.4L66.7 18.9L67.0 19.5L67.4 20.2L67.7 20.8L68.0 21.4L68.3 22.0L68.6 22.7L68.9 23.3L69.2 24.0L69.5 24.6L69.7 25.3L70.0 25.9L71.1 22.8L71.4 23.5L71.6 24.2L71.9 24.9L72.1 25.6L72.4 26.3L72.6 27.0L72.9 27.8L73.1 28.5L73.3 29.2L73.5 30.0L73.7 30.7L73.9 31.5L74.1 32.2L75.3 29.5L75.5 30.3L75.7 31.0L75.9 31.8L76.1 32.6L76.2 33.4L76.4 34.2L76.5 35.1L76.7 35.9L76.8 36.7L76.9 37.5L77.1 38.3L77.2 39.1L77.3 39.9L78.6 37.6L78.7 38.5L78.8 39.3L78.8 40.2L78.9 41.0L79.0 41.9L79.1 42.7L79.1 43.6L79.2 44.5L79.2 45.3L79.2 46.2L79.2 47.0L79.3 47.9L80.5 46.0L80.5 46.9L80.5 47.8L80.5 48.7L80.5 49.6L80.5 50.4L80.5 51.3L80.4 52.2L80.4 53.1L80.3 53.9L80.2 54.8L80.2 55.7L80.1 56.5L80.0 57.4L81.2 56.0L81.1 56.9L81.0 57.8L80.8 58.7L80.7 59.6L80.6 60.5L80.4 61.3L80.3 62.2L80.1 63.1L79.9 63.9L79.7 64.8L79.5 65.6L79.3 66.5L79.1 67.3L80.2 66.4L79.9 67.3L79.7 68.2L79.4 69.0L79.2 69.9L78.9 70.7L78.6 71.5L78.3 72.4L78.0 73.2L77.7 74.0L77.4 74.8L77.1 75.6L76.8 76.4L77.5 76.0L77.2 76.8L76.8 77.6L76.4 78.4L76.0 79.2L75.6 80.0L75.2 80.8L74.7 81.5L74.3 82.3L73.8 83.1L73.3 83.8L72.8 84.6L72.3 85.3L71.8 86.0L72.1 86.0L71.5 86.8L70.9 87.6L70.3 88.3L69.6 89.0L69.0 89.8L68.3 90.5L67.5 91.2L66.7 92.0L65.9 92.7L65.0 93.5L64.1 94.2L63.0 95.0L62.2 95.6Z"></path><path data-veins="unlobed" stroke="rgba(20,50,30,.45)" stroke-width="1.2" fill="none" d="M55 100 Q50.5 81.8 43.8 67.6M55 100 Q51.5 70.8 46.3 45.6M55 100 Q55.0 59.3 55.0 22.6M55 100 Q58.5 70.8 63.7 45.6M55 100 Q59.5 81.8 66.2 67.6"></path><line x1="55" y1="100" x2="55" y2="112" stroke="#6b5a3a" stroke-width="2.5"></line></svg><b>Unlobed (ovate–cordate)</b><span>Heart-shaped base, tapering drip tip, serrate edge, no lobes. Common in <i>megapotamicum</i> lines.</span></div>
+    <div class="tile"><svg width="104" height="118" viewBox="0 0 110 118"><defs><linearGradient id="lg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f9169"></stop><stop offset="1" stop-color="#3e6b4d"></stop></linearGradient></defs><path data-leaf="three" fill="url(#lg3)" d="M47.1 97.1L46.0 96.6L44.9 96.1L43.9 95.6L43.0 95.0L42.1 94.5L41.2 93.9L40.3 93.4L39.4 92.8L38.6 92.1L37.7 91.5L36.9 90.8L36.0 90.2L34.3 89.0L33.4 88.2L32.5 87.4L31.7 86.6L30.9 85.8L30.1 85.0L29.3 84.2L28.5 83.3L27.8 82.5L27.1 81.6L26.4 80.7L25.8 79.9L23.7 78.0L23.1 77.1L22.5 76.2L22.0 75.3L21.5 74.4L21.1 73.5L20.7 72.7L20.3 71.8L20.0 71.0L19.7 70.2L19.5 69.4L19.3 68.7L19.2 67.9L17.4 65.7L17.4 65.0L17.4 64.4L17.4 63.8L17.5 63.2L17.7 62.7L17.9 62.2L18.2 61.8L18.5 61.4L18.8 61.1L19.2 60.8L19.6 60.6L18.5 58.6L19.0 58.4L19.5 58.3L20.1 58.3L20.8 58.3L21.4 58.4L22.1 58.5L22.8 58.7L23.5 59.0L24.3 59.2L25.1 59.5L25.8 59.9L26.6 60.3L26.1 58.9L27.0 59.4L27.8 59.9L28.7 60.5L29.5 61.1L30.4 61.7L31.2 62.3L32.0 63.0L32.8 63.6L33.6 64.3L34.4 65.0L35.2 65.7L35.0 64.8L35.7 65.5L36.5 66.2L37.2 66.8L37.8 67.5L38.5 68.1L39.1 68.8L39.7 69.3L40.3 69.9L40.8 70.4L41.3 70.9L41.7 71.3L42.2 71.7L42.0 70.7L42.4 71.0L42.7 71.3L43.1 71.5L43.3 71.6L43.6 71.7L43.9 71.7L44.1 71.6L44.2 71.5L44.4 71.3L44.5 71.0L44.7 70.7L44.3 68.9L44.4 68.4L44.4 67.9L44.5 67.3L44.5 66.6L44.5 65.8L44.5 65.0L44.6 64.2L44.6 63.2L44.6 62.3L44.6 61.3L44.6 60.2L44.6 59.1L44.1 55.9L44.1 54.7L44.1 53.4L44.2 52.1L44.2 50.8L44.3 49.4L44.3 48.1L44.4 46.7L44.5 45.3L44.7 44.0L44.8 42.6L45.0 41.2L44.7 37.1L44.9 35.7L45.1 34.3L45.4 33.0L45.6 31.7L45.9 30.4L46.2 29.2L46.6 28.1L46.9 27.0L47.3 25.9L47.7 25.0L48.1 24.1L48.5 23.2L48.7 18.8L49.2 18.1L49.7 17.4L50.2 16.9L50.7 16.4L51.2 16.0L51.7 15.7L52.3 15.5L52.8 15.4L53.4 15.4L53.9 15.5L54.5 15.7L55.0 12.0L55.6 12.4L56.1 12.8L56.7 13.4L57.2 14.0L57.8 14.8L58.3 15.6L58.8 16.5L59.3 17.5L59.7 18.5L60.2 19.7L60.6 20.9L61.1 22.2L61.8 19.9L62.1 21.4L62.5 22.9L62.9 24.4L63.2 26.0L63.5 27.7L63.7 29.4L64.0 31.1L64.2 32.8L64.4 34.6L64.6 36.3L64.7 38.1L65.3 37.1L65.4 38.9L65.5 40.8L65.6 42.6L65.6 44.4L65.7 46.2L65.7 48.0L65.7 49.7L65.6 51.4L65.6 53.1L65.6 54.7L65.5 56.3L65.5 57.8L65.9 57.3L65.8 58.8L65.7 60.2L65.7 61.5L65.6 62.8L65.5 64.0L65.4 65.1L65.4 66.1L65.3 67.1L65.3 68.0L65.3 68.9L65.2 69.6L65.7 68.9L65.8 69.5L65.8 70.1L65.9 70.6L65.9 71.0L66.0 71.3L66.2 71.6L66.3 71.8L66.5 72.0L66.7 72.0L66.9 72.1L67.2 72.0L67.5 72.0L68.4 70.5L68.7 70.3L69.1 70.1L69.5 69.8L69.9 69.5L70.4 69.2L70.9 68.8L71.4 68.4L71.9 68.0L72.4 67.6L73.0 67.2L73.5 66.8L75.0 64.8L75.6 64.3L76.3 63.9L76.9 63.4L77.6 63.0L78.2 62.6L78.9 62.2L79.5 61.9L80.2 61.6L80.8 61.3L81.4 61.0L82.1 60.8L82.7 60.6L84.6 58.6L85.2 58.5L85.8 58.4L86.3 58.4L86.9 58.4L87.4 58.5L87.8 58.6L88.3 58.8L88.7 59.0L89.0 59.3L89.4 59.6L89.7 60.0L91.5 58.6L91.8 59.0L91.9 59.6L92.1 60.2L92.1 60.8L92.2 61.5L92.2 62.2L92.1 62.9L92.0 63.7L91.8 64.5L91.6 65.4L91.4 66.2L91.0 67.1L92.4 66.6L92.0 67.5L91.5 68.6L91.0 69.6L90.5 70.6L89.9 71.7L89.3 72.7L88.6 73.8L87.9 74.8L87.2 75.9L86.4 76.9L85.7 78.0L86.3 78.0L85.4 79.1L84.5 80.1L83.6 81.2L82.7 82.2L81.7 83.2L80.8 84.1L79.8 85.1L78.8 86.0L77.8 86.9L76.9 87.8L75.9 88.6L74.9 89.4L74.8 89.7L73.8 90.5L72.8 91.3L71.8 92.0L70.8 92.7L69.8 93.3L68.8 93.9L67.8 94.6L66.8 95.1L65.8 95.7L64.8 96.2L63.7 96.7L62.9 97.1Z"></path><path data-veins="three" stroke="rgba(20,50,30,.45)" stroke-width="1.2" fill="none" d="M55 100 Q42.4 83.1 23.6 70.2M55 100 Q55.0 58.4 55.0 20.8M55 100 Q67.6 83.1 86.4 70.2"></path><line x1="55" y1="100" x2="55" y2="112" stroke="#6b5a3a" stroke-width="2.5"></line></svg><b>3-lobed</b><span>Central lobe + two side lobes, palmate veins to each tip. <b>Your mother's count</b> — hers has a long pointed center lobe with short side lobes, medium sinus. Sinus depth is its own axis.</span></div>
+    <div class="tile"><svg width="104" height="118" viewBox="0 0 110 118"><defs><linearGradient id="lg5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f9169"></stop><stop offset="1" stop-color="#3e6b4d"></stop></linearGradient></defs><path data-leaf="five" fill="url(#lg5)" d="M33.3 97.7L30.8 97.1L28.6 96.5L26.6 95.9L24.9 95.3L23.4 94.7L22.1 94.1L20.9 93.4L19.9 92.8L19.1 92.2L18.5 91.6L18.0 91.0L15.9 90.0L15.8 89.5L15.8 89.0L16.0 88.6L16.3 88.2L16.8 87.8L17.4 87.5L18.1 87.3L19.0 87.1L20.0 87.0L21.0 87.0L22.2 87.0L21.9 86.4L23.2 86.5L24.6 86.7L26.0 86.9L27.4 87.2L28.8 87.5L30.2 87.8L31.6 88.2L33.0 88.5L34.2 88.9L35.5 89.3L35.7 89.1L36.8 89.5L37.9 89.8L38.7 90.1L39.5 90.3L40.2 90.5L40.7 90.6L41.1 90.7L41.4 90.6L41.5 90.5L41.5 90.3L41.4 90.0L40.4 89.1L40.0 88.5L39.5 87.8L38.8 87.0L38.1 86.1L37.2 85.1L36.3 84.0L35.2 82.8L34.1 81.4L33.0 80.0L31.8 78.4L29.4 75.7L28.1 74.0L26.8 72.1L25.5 70.2L24.2 68.3L22.9 66.4L21.7 64.4L20.6 62.4L19.5 60.5L18.5 58.5L17.6 56.6L16.8 54.8L14.2 50.9L13.6 49.1L13.1 47.4L12.7 45.9L12.5 44.5L12.4 43.3L12.4 42.2L12.5 41.2L12.8 40.4L13.3 39.8L13.8 39.4L12.6 36.3L13.4 36.3L14.3 36.4L15.3 36.7L16.5 37.3L17.7 38.0L19.0 38.9L20.4 40.0L21.8 41.2L23.3 42.6L24.8 44.1L26.3 45.8L26.5 45.1L28.1 47.0L29.7 49.1L31.3 51.1L32.9 53.3L34.4 55.5L35.8 57.6L37.2 59.8L38.6 61.9L39.8 64.0L41.0 66.0L41.5 66.4L42.6 68.3L43.6 70.1L44.5 71.7L45.3 73.1L46.0 74.4L46.6 75.5L47.1 76.4L47.6 77.0L47.9 77.5L48.2 77.8L48.4 77.8L48.3 76.5L48.4 76.1L48.4 75.4L48.4 74.5L48.3 73.4L48.3 72.1L48.1 70.6L48.0 68.9L47.9 67.0L47.8 65.0L47.6 62.9L47.2 58.7L47.1 56.3L47.0 53.7L47.0 51.1L47.0 48.4L47.0 45.7L47.1 43.0L47.2 40.4L47.4 37.8L47.6 35.3L47.9 32.9L48.2 30.6L48.3 25.1L48.7 23.0L49.2 21.1L49.8 19.3L50.3 17.8L50.9 16.6L51.6 15.5L52.2 14.7L52.9 14.2L53.6 13.9L54.3 13.8L55.0 10.0L55.7 10.5L56.4 11.2L57.1 12.2L57.8 13.5L58.4 15.0L59.1 16.7L59.6 18.6L60.2 20.8L60.6 23.1L61.1 25.5L61.4 28.2L62.1 27.6L62.4 30.6L62.6 33.6L62.8 36.7L62.9 39.8L62.9 42.9L63.0 46.0L62.9 49.1L62.9 52.1L62.8 55.0L62.6 57.9L62.5 60.6L62.7 61.4L62.5 63.9L62.3 66.3L62.1 68.4L61.9 70.4L61.7 72.2L61.6 73.7L61.5 75.0L61.4 76.0L61.4 76.9L61.5 77.5L61.9 76.8L62.0 77.0L62.3 76.9L62.6 76.6L63.0 76.1L63.4 75.4L64.0 74.5L64.6 73.5L65.3 72.2L66.1 70.9L67.0 69.4L67.9 67.9L69.5 64.6L70.7 62.9L71.8 61.0L73.1 59.2L74.3 57.3L75.6 55.5L77.0 53.7L78.3 52.0L79.7 50.3L81.0 48.7L82.3 47.3L85.0 43.4L86.3 42.1L87.6 41.0L88.9 40.0L90.0 39.3L91.1 38.7L92.1 38.3L93.1 38.0L93.9 38.0L94.6 38.2L95.1 38.5L95.6 39.1L97.9 37.0L98.1 37.9L98.2 39.0L98.1 40.3L98.0 41.7L97.6 43.3L97.2 45.0L96.6 46.8L95.9 48.7L95.1 50.7L94.2 52.8L95.0 52.8L93.8 55.0L92.6 57.3L91.2 59.7L89.9 62.0L88.4 64.2L87.0 66.5L85.5 68.7L84.0 70.8L82.4 72.9L81.0 74.9L79.5 76.8L79.2 77.6L77.7 79.3L76.4 80.9L75.1 82.5L73.9 83.9L72.8 85.1L71.8 86.2L70.9 87.2L70.1 88.1L69.5 88.9L69.0 89.5L69.3 89.5L69.0 89.9L68.9 90.2L68.9 90.5L69.1 90.6L69.4 90.6L69.8 90.6L70.3 90.4L70.9 90.3L71.7 90.1L72.5 89.9L73.4 89.6L75.4 88.8L76.5 88.5L77.6 88.2L78.8 87.9L80.0 87.7L81.2 87.5L82.4 87.3L83.6 87.1L84.7 87.0L85.8 86.9L86.8 86.9L89.3 86.4L90.3 86.5L91.1 86.6L91.8 86.9L92.4 87.1L92.8 87.5L93.1 87.9L93.3 88.3L93.3 88.8L93.2 89.3L92.9 89.9L92.4 90.5L93.6 90.7L92.8 91.3L91.8 92.0L90.7 92.7L89.4 93.4L88.0 94.1L86.4 94.7L84.7 95.4L82.7 96.0L80.7 96.6L78.3 97.2L76.7 97.7Z"></path><path data-veins="five" stroke="rgba(20,50,30,.45)" stroke-width="1.2" fill="none" d="M55 100 Q43.7 95.0 26.7 93.9M55 100 Q40.2 71.1 18.0 46.3M55 100 Q55.0 57.5 55.0 19.0M55 100 Q69.8 71.1 92.0 46.3M55 100 Q66.3 95.0 83.3 93.9"></path><line x1="55" y1="100" x2="55" y2="112" stroke="#6b5a3a" stroke-width="2.5"></line></svg><b>5-lobed (maple-like)</b><span>Five pointed lobes. Strong <i>hybridum</i> trait — not your mother's, so a 5-lobed seedling is worth noting.</span></div>
+    <div class="tile"><svg width="104" height="118" viewBox="0 0 110 118"><defs><linearGradient id="lgS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f9169"></stop><stop offset="1" stop-color="#3e6b4d"></stop></linearGradient></defs><path data-leaf="threeShallow" fill="url(#lgS)" d="M45.1 96.3L43.8 95.7L42.6 95.1L41.5 94.4L40.5 93.9L39.6 93.3L38.7 92.7L37.9 92.1L37.2 91.5L36.4 90.9L35.7 90.2L35.0 89.6L34.4 89.0L32.7 87.8L32.1 87.2L31.5 86.5L30.9 85.8L30.3 85.1L29.8 84.4L29.3 83.7L28.7 83.0L28.3 82.3L27.8 81.6L27.4 80.9L27.0 80.2L25.2 78.5L24.9 77.7L24.5 77.0L24.2 76.3L23.9 75.5L23.6 74.8L23.3 74.1L23.1 73.4L22.9 72.7L22.7 72.0L22.6 71.3L22.5 70.6L22.4 70.0L20.8 67.9L20.7 67.3L20.7 66.6L20.7 66.0L20.8 65.4L20.8 64.9L20.9 64.3L21.0 63.8L21.2 63.3L21.3 62.8L21.5 62.4L21.8 61.9L20.4 59.7L20.7 59.3L21.0 58.9L21.3 58.6L21.6 58.3L22.0 58.0L22.3 57.7L22.7 57.4L23.1 57.2L23.5 57.0L23.9 56.8L24.4 56.7L24.8 56.6L23.8 54.4L24.3 54.3L24.8 54.2L25.3 54.1L25.8 54.1L26.3 54.1L26.7 54.1L27.2 54.0L27.7 54.1L28.2 54.1L28.7 54.1L29.2 54.1L28.5 52.0L29.0 52.0L29.5 52.1L30.0 52.1L30.4 52.2L30.9 52.2L31.4 52.2L31.8 52.3L32.3 52.3L32.7 52.3L33.1 52.3L33.5 52.3L33.9 52.2L33.3 49.9L33.7 49.9L34.1 49.8L34.5 49.7L34.9 49.6L35.2 49.4L35.6 49.3L35.9 49.1L36.2 48.9L36.6 48.7L36.9 48.4L37.2 48.2L36.7 45.4L37.0 45.1L37.3 44.7L37.6 44.4L37.9 44.0L38.2 43.5L38.5 43.1L38.7 42.7L39.0 42.2L39.3 41.7L39.6 41.2L39.9 40.7L40.2 40.2L39.8 36.8L40.1 36.2L40.4 35.6L40.7 35.0L41.0 34.4L41.3 33.8L41.7 33.3L42.0 32.7L42.4 32.1L42.7 31.5L43.1 30.9L43.4 30.4L43.3 26.5L43.7 26.0L44.1 25.4L44.5 24.9L44.9 24.4L45.3 23.9L45.8 23.4L46.2 23.0L46.7 22.6L47.1 22.2L47.6 21.9L48.1 21.6L48.5 21.4L48.8 17.4L49.3 17.2L49.8 17.0L50.3 16.9L50.8 16.9L51.3 16.8L51.9 16.8L52.4 16.9L52.9 17.0L53.4 17.1L54.0 17.3L54.5 17.6L55.0 14.0L55.5 14.3L56.1 14.7L56.6 15.1L57.1 15.6L57.6 16.1L58.1 16.7L58.6 17.3L59.1 17.9L59.6 18.6L60.1 19.3L60.5 20.1L61.0 20.8L61.7 18.0L62.2 18.8L62.6 19.7L63.0 20.7L63.4 21.6L63.8 22.6L64.2 23.6L64.6 24.6L64.9 25.6L65.3 26.7L65.6 27.7L65.9 28.8L66.7 26.5L67.0 27.6L67.3 28.7L67.6 29.8L67.9 30.9L68.1 32.0L68.4 33.1L68.6 34.2L68.8 35.3L69.0 36.3L69.2 37.4L69.4 38.4L69.6 39.4L70.5 37.6L70.7 38.6L70.8 39.6L71.0 40.5L71.2 41.4L71.4 42.3L71.5 43.2L71.7 44.1L71.8 44.9L72.0 45.7L72.2 46.4L72.3 47.2L73.3 45.4L73.5 46.1L73.7 46.8L73.9 47.4L74.1 48.0L74.3 48.6L74.5 49.2L74.7 49.7L74.9 50.2L75.1 50.7L75.3 51.2L75.5 51.6L75.8 52.0L77.0 50.2L77.2 50.6L77.5 50.9L77.8 51.3L78.0 51.7L78.3 52.0L78.6 52.3L78.9 52.6L79.2 52.9L79.5 53.3L79.7 53.6L80.0 53.9L81.5 52.0L81.8 52.3L82.1 52.6L82.4 53.0L82.7 53.3L83.0 53.6L83.3 54.0L83.6 54.3L83.9 54.7L84.1 55.1L84.4 55.5L84.6 55.9L84.9 56.3L86.5 54.7L86.7 55.1L86.9 55.6L87.1 56.1L87.3 56.7L87.5 57.2L87.6 57.8L87.7 58.3L87.8 58.9L87.9 59.6L88.0 60.2L88.0 60.9L89.6 59.7L89.6 60.4L89.5 61.2L89.5 61.9L89.4 62.7L89.3 63.5L89.1 64.3L89.0 65.1L88.8 65.9L88.6 66.7L88.4 67.6L88.1 68.4L87.8 69.3L89.0 68.7L88.7 69.6L88.3 70.5L87.9 71.4L87.5 72.3L87.1 73.2L86.6 74.1L86.1 75.0L85.6 75.9L85.1 76.8L84.6 77.7L84.0 78.6L84.8 78.5L84.1 79.4L83.5 80.3L82.8 81.1L82.2 82.0L81.5 82.8L80.8 83.7L80.1 84.5L79.4 85.3L78.6 86.1L77.9 86.8L77.1 87.6L76.3 88.3L76.5 88.5L75.7 89.3L74.8 90.0L74.0 90.7L73.1 91.4L72.2 92.0L71.2 92.7L70.3 93.3L69.2 94.0L68.2 94.6L67.0 95.2L65.8 95.8L64.9 96.3Z"></path><path data-veins="threeShallow" stroke="rgba(20,50,30,.45)" stroke-width="1.2" fill="none" d="M55 100 Q43.8 84.4 27.0 72.7M55 100 Q55.0 59.3 55.0 22.6M55 100 Q66.2 84.4 83.0 72.7"></path><line x1="55" y1="100" x2="55" y2="112" stroke="#6b5a3a" stroke-width="2.5"></line></svg><b>Sinus depth — separate axis</b><span>Same 3 lobes as the tile above, but a <i>shallow</i> sinus. Score shallow / medium / deep for any lobed leaf — it inherits independently of lobe count.</span></div>
+  </div>
+  <div class="grid g3" style="margin-top:14px">
+    <div class="tile"><svg width="80" height="50" viewBox="0 0 80 50"><path d="M6 40 L12 30 L18 40 L24 30 L30 40 L36 30 L42 40 L48 30 L54 40 L60 30 L66 40 L72 30" fill="none" stroke="#4a7c59" stroke-width="2.5"></path></svg><b>Margin: serrate</b><span>Sharp forward-pointing teeth (most Abutilon). Crenate = rounded teeth; note tooth size.</span></div>
+    <div class="tile"><svg width="80" height="50" viewBox="0 0 80 50"><ellipse cx="40" cy="25" rx="32" ry="18" fill="#4a7c59"></ellipse><circle cx="28" cy="18" r="4" fill="#e8c84a"></circle><circle cx="48" cy="28" r="5" fill="#e8c84a"></circle><circle cx="58" cy="16" r="3" fill="#e8c84a"></circle><circle cx="20" cy="30" r="3" fill="#e8c84a"></circle></svg><b>Variegation (mottled)</b><span>⚠ Yellow mosaic mottling in Abutilon is usually caused by <i>Abutilon mosaic virus</i>, spread by grafting/whitefly — NOT inherited through seed. Don't score it as genetic.</span></div>
+    <div class="tile"><svg width="80" height="50" viewBox="0 0 80 50"><line x1="10" y1="40" x2="70" y2="40" stroke="#4a7c59" stroke-width="3"></line><line x1="18" y1="40" x2="16" y2="32" stroke="#8fae7d" stroke-width="1"></line><line x1="26" y1="40" x2="25" y2="31" stroke="#8fae7d" stroke-width="1"></line><line x1="34" y1="40" x2="32" y2="33" stroke="#8fae7d" stroke-width="1"></line><line x1="42" y1="40" x2="41" y2="31" stroke="#8fae7d" stroke-width="1"></line><line x1="50" y1="40" x2="48" y2="32" stroke="#8fae7d" stroke-width="1"></line><line x1="58" y1="40" x2="57" y2="31" stroke="#8fae7d" stroke-width="1"></line></svg><b>Pubescence</b><span>Downy hairs on stems/leaf undersides. Score: smooth / soft-hairy / felty. Easily checked on young seedlings.</span></div>
+  </div>
+
+  <h2>Growth habit</h2>
+  <div class="grid g3">
+    <div class="tile"><svg width="80" height="70" viewBox="0 0 80 70"><line x1="40" y1="66" x2="40" y2="10" stroke="#7a5c3a" stroke-width="3"></line><line x1="40" y1="30" x2="24" y2="14" stroke="#7a5c3a" stroke-width="2"></line><line x1="40" y1="40" x2="58" y2="22" stroke="#7a5c3a" stroke-width="2"></line><line x1="40" y1="52" x2="26" y2="38" stroke="#7a5c3a" stroke-width="2"></line></svg><b>Upright</b><span>Stiff vertical leader, V-shaped branching. Gets tall and (yes) scraggly without pinching.</span></div>
+    <div class="tile"><svg width="80" height="70" viewBox="0 0 80 70"><path d="M40 66 C40 40 30 24 12 18 M40 66 C40 42 52 26 70 22 M40 66 C40 48 36 36 24 32" fill="none" stroke="#7a5c3a" stroke-width="2.5"></path></svg><b>Arching / fountain</b><span>Stems rise then weep; flowers dangle along the stem. A megapotamicum-line habit.</span></div>
+    <div class="tile"><svg width="80" height="70" viewBox="0 0 80 70"><path d="M10 20 C30 16 46 22 58 34 C66 42 70 54 72 64 M10 20 C24 26 34 38 38 52" fill="none" stroke="#7a5c3a" stroke-width="2.5"></path></svg><b>Trailing / lax</b><span>Long thin whippy stems, wants support. <i>megapotamicum</i> trait — watch for it in your seedlings.</span></div>
+  </div>
+  <div class="note"><b>Field checklist per seedling:</b> leaf lobing · margin · leaf size · hairiness · internode length · stem color (green vs. red-flushed — an early anthocyanin clue!) · then at first bloom: flower form · flower length &amp; width · petal color · calyx color &amp; shape · veining · stamen column color · pedicel (flower stalk) length · petal overlap. Red-flushed stems and leaf veins on a young seedling often predict red pigment in the flower.</div>
+</section>
+
+<!-- ============ PROPAGATION ============ -->
+<section class="tab" id="tab-prop">
+  <h2>Cultivating from seed</h2>
+  <p>Abutilon is in the mallow family, and mallow seeds have a <b>hard, water-resistant seed coat</b> — this is the #1 reason they sit in soil doing nothing. The fix is mechanical: scarify, then soak. Untreated seed can take months or never sprout; treated seed typically germinates in 9–21 days.</p>
+
+  <div class="grid g3">
+    <div class="tile step"><span class="n">1</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M42 8 L48 20 L42 24 L36 20Z" fill="#8a7a5c"></path><path d="M26 24 C22 40 26 54 42 58 C58 54 62 40 58 24 L50 30 L42 26 L34 30Z" fill="#a08a5f"></path><path d="M34 30 L34 54 M42 26 L42 58 M50 30 L50 54" stroke="#7a6844" stroke-width="1.5" fill="none"></path><circle cx="30" cy="66" r="3" fill="#4a3b28"></circle><circle cx="42" cy="68" r="3" fill="#4a3b28"></circle><circle cx="54" cy="66" r="3" fill="#4a3b28"></circle></svg><b>Harvest ripe seed</b><span>Let pods (schizocarps) dry <i>brown and papery on the plant</i>, then shake seeds out. Seed from green pods is immature and won't sprout. Fresh seed germinates far better than stored.</span></div>
+    <div class="tile step"><span class="n">2</span><svg width="84" height="74" viewBox="0 0 84 74"><circle cx="24" cy="34" r="15" fill="#4a3b28"></circle><path d="M24 22 A12 12 0 0 1 24 46 Z" fill="#f0ead8"></path><circle cx="22" cy="34" r="3.5" fill="#c9b98a"></circle><circle cx="60" cy="34" r="15" fill="#4a3b28"></circle><path d="M60 22 A12 12 0 0 1 60 46 Z" fill="#8a8378"></path><text x="24" y="66" font-size="9" text-anchor="middle" fill="#4a7c59" font-family="sans-serif">firm ✓</text><text x="60" y="66" font-size="9" text-anchor="middle" fill="#a33" font-family="sans-serif">hollow ✗</text></svg><b>Cut-test a sample</b><span>Sacrifice 3–5 seeds: slice in half. Firm, pale interior = viable. Hollow, dusty, or shriveled = dead — common in open-pollinated hybrid seed. If most are hollow, no technique will save the batch; collect fresher pods.</span></div>
+    <div class="tile step"><span class="n">3</span><svg width="84" height="74" viewBox="0 0 84 74"><rect x="10" y="40" width="64" height="16" rx="3" fill="#c9a86a"></rect><rect x="10" y="40" width="64" height="16" rx="3" fill="none" stroke="#a3854a"></rect><g fill="#a3854a"><circle cx="18" cy="46" r="1"></circle><circle cx="26" cy="50" r="1"></circle><circle cx="34" cy="45" r="1"></circle><circle cx="42" cy="51" r="1"></circle><circle cx="50" cy="46" r="1"></circle><circle cx="58" cy="50" r="1"></circle><circle cx="66" cy="45" r="1"></circle></g><circle cx="42" cy="32" r="8" fill="#4a3b28"></circle><path d="M36 26 A9 9 0 0 1 48 26" stroke="#e8e0cc" stroke-width="2" fill="none"></path><path d="M20 18 C28 12 56 12 64 18" stroke="#8a8378" stroke-width="1.5" fill="none" stroke-dasharray="3 3"></path></svg><b>Scarify</b><span>Rub each seed on fine sandpaper (or nick with a nail clipper) until you <i>just</i> see a pale spot of the interior. You're breaching the waterproof coat, not carving. This step alone often doubles germination speed and count.</span></div>
+    <div class="tile step"><span class="n">4</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M26 12 L58 12 L54 62 L30 62 Z" fill="#dceef5" stroke="#9dbecd"></path><path d="M28 24 L56 24" stroke="#9dbecd" stroke-width="1.5"></path><circle cx="38" cy="55" r="3" fill="#4a3b28"></circle><circle cx="46" cy="56" r="3" fill="#4a3b28"></circle><path d="M64 20 C68 26 68 34 64 40" stroke="#c98a3c" stroke-width="2" fill="none"></path><text x="42" y="9" font-size="9" text-anchor="middle" fill="#6b7a6c" font-family="sans-serif">12–24 h</text></svg><b>Soak overnight</b><span>Drop scarified seeds in hand-hot water (~120–140°F / 50–60°C to start) and leave 12–24 hours as it cools. Viable scarified seeds usually swell visibly. Sow immediately after — don't let them dry out again.</span></div>
+    <div class="tile step"><span class="n">5</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M18 30 L66 30 L60 66 L24 66 Z" fill="#b5651d"></path><rect x="20" y="32" width="44" height="10" fill="#5a4632"></rect><circle cx="42" cy="38" r="2.5" fill="#4a3b28"></circle><path d="M70 30 L70 38" stroke="#2d3a2e" stroke-width="1"></path><path d="M68 30 L72 30 M68 38 L72 38" stroke="#2d3a2e" stroke-width="1"></path><text x="80" y="37" font-size="8" text-anchor="end" fill="#2d3a2e" font-family="sans-serif">¼″</text></svg><b>Sow shallow</b><span>¼ inch (5 mm) deep, no deeper, in moist sterile seed-starting mix (not garden soil). Water once with a fine rose, then keep <i>evenly moist, never soggy</i>. Too deep is a classic silent failure.</span></div>
+    <div class="tile step"><span class="n">6</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M16 44 L68 44 L64 62 L20 62 Z" fill="#b5651d"></path><path d="M18 44 C18 22 66 22 66 44" fill="#dceef5" opacity=".75" stroke="#9dbecd"></path><path d="M26 70 Q30 66 26 62 M42 70 Q46 66 42 62 M58 70 Q62 66 58 62" stroke="#c98a3c" stroke-width="2" fill="none"></path><text x="42" y="38" font-size="9" text-anchor="middle" fill="#356" font-family="sans-serif">70–80°F</text></svg><b>Warmth + humidity</b><span>70–80°F (21–27°C) is the trigger — cool rooms are why August-sown seed indoors sulks. A seedling heat mat under the tray plus a clear dome or bag on top is the reliable combo. Bright light, not hot direct sun.</span></div>
+    <div class="tile step"><span class="n">7</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M16 60 L68 60 L64 72 L20 72 Z" fill="#b5651d"></path><path d="M42 60 L42 40" stroke="#4a7c59" stroke-width="2"></path><ellipse cx="32" cy="38" rx="10" ry="5" fill="#6b9e78" transform="rotate(-20 32 38)"></ellipse><ellipse cx="52" cy="38" rx="10" ry="5" fill="#6b9e78" transform="rotate(20 52 38)"></ellipse><path d="M42 40 L42 30 M42 30 C38 28 37 24 38 20 M42 30 C46 28 47 24 46 20" stroke="#4a7c59" stroke-width="1.5" fill="none"></path></svg><b>Sprout → prick out</b><span>Expect sprouts in 9–21 days. Vent the dome as soon as they're up (trapped humid air = damping-off). Pot on individually once the first <i>true</i> (lobed) leaves appear. Log each one in the Journal tab that day.</span></div>
+  </div>
+
+  <h3>Why your seeds aren't sprouting — run this checklist in order</h3>
+  <table>
+    <tbody><tr><th>Suspect</th><th>Test</th><th>Fix</th></tr>
+    <tr><td><b>1. Dead / empty seed</b> (most likely for open-pollinated hybrid seed)</td><td>Cut-test 3–5 seeds. Hollow or dusty inside = dead. Also: immature seed from green pods never ripens off-plant.</td><td>Harvest only from pods that dried brown on the tree; use within months, not years.</td></tr>
+    <tr><td><b>2. Hard coat never breached</b></td><td>Soaked seeds that don't swell after 24 h weren't scarified through.</td><td>Sandpaper until a pale spot shows, re-soak. Swollen seed = water is in.</td></tr>
+    <tr><td><b>3. Too cold</b></td><td>Room below ~68°F, or a windowsill that drops at night.</td><td>Heat mat set to 75°F, or the top of a fridge/water heater.</td></tr>
+    <tr><td><b>4. Sown too deep / dried out / waterlogged</b></td><td>Dig one up: rotted mush = too wet; hard and dry = coat re-dried; nothing at 1 inch down = too deep.</td><td>¼ inch deep, dome to hold moisture, water from below.</td></tr>
+    <tr><td><b>5. Sprouted then vanished</b></td><td>Tiny felled stems = damping-off fungus.</td><td>Sterile mix, clean pots, vent the dome at first sprout, water from below.</td></tr>
+  </tbody></table>
+
+  <h2 style="margin-top:34px">Propagating from cuttings</h2>
+  <p>Cuttings clone the parent exactly — the only way to duplicate your mother tree or a favorite seedling, since seed shuffles the genes. Abutilon roots readily <b>if</b> the cutting is the right age of wood: soft, green, flexible spring–summer growth. The #1 failure is using old, brown, woody stems (which is most of what a 6ft scraggly tree offers at eye level) or flowering shoots.</p>
+
+  <div class="grid g3">
+    <div class="tile step"><span class="n">1</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M14 66 C22 50 30 34 42 20 C50 12 58 8 66 6" stroke="#4a7c59" stroke-width="3" fill="none"></path><path d="M14 66 C20 56 24 48 30 40" stroke="#7a5c3a" stroke-width="4" fill="none"></path><circle cx="48" cy="16" r="2" fill="#3a6347"></circle><circle cx="55" cy="11" r="2" fill="#3a6347"></circle><path d="M40 26 L52 22" stroke="#a33" stroke-width="2"></path><path d="M43 18 L49 30" stroke="#a33" stroke-width="2"></path></svg><b>Choose the right shoot</b><span>Soft, green, pencil-thin tip growth, 4–6″, <b>no flowers or buds</b> (pinch them off or pick another shoot — flowers steal the energy roots need). Brown, stiff wood = wrong. Take cuttings in the morning, spring through late summer.</span></div>
+    <div class="tile step"><span class="n">2</span><svg width="84" height="74" viewBox="0 0 84 74"><line x1="42" y1="10" x2="42" y2="64" stroke="#4a7c59" stroke-width="3"></line><circle cx="42" cy="56" r="2.5" fill="#3a6347"></circle><circle cx="42" cy="42" r="2.5" fill="#3a6347"></circle><ellipse cx="30" cy="16" rx="10" ry="5" fill="#6b9e78" transform="rotate(-25 30 16)"></ellipse><ellipse cx="54" cy="16" rx="10" ry="5" fill="#6b9e78" transform="rotate(25 54 16)"></ellipse><path d="M54 16 L60 13" stroke="#a33" stroke-width="1.5" stroke-dasharray="2 2"></path><path d="M36 60 L48 60" stroke="#a33" stroke-width="2"></path><text x="64" y="63" font-size="8" fill="#a33" font-family="sans-serif">cut ↓node</text></svg><b>Prep the cutting</b><span>Cut just <i>below</i> a node (roots form there). Strip all lower leaves — bare nodes go in the mix. Keep only the top 2 leaves; slice large ones in half crosswise to cut water loss. Work fast; don't let it wilt.</span></div>
+    <div class="tile step"><span class="n">3</span><svg width="84" height="74" viewBox="0 0 84 74"><rect x="28" y="42" width="28" height="22" rx="3" fill="#e8dcae" stroke="#c9b060"></rect><line x1="42" y1="8" x2="42" y2="52" stroke="#4a7c59" stroke-width="3"></line><circle cx="42" cy="50" r="4" fill="#d9c46a"></circle><ellipse cx="32" cy="12" rx="9" ry="4.5" fill="#6b9e78" transform="rotate(-25 32 12)"></ellipse><ellipse cx="52" cy="12" rx="9" ry="4.5" fill="#6b9e78" transform="rotate(25 52 12)"></ellipse></svg><b>Hormone dip</b><span>Moisten the bottom inch, dip in rooting hormone powder or gel (IBA ~0.3%), tap off excess. Optional for many plants; for Abutilon it meaningfully raises the strike rate and speed. Replace hormone that's more than ~2 years old — it degrades.</span></div>
+    <div class="tile step"><span class="n">4</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M20 34 L64 34 L58 68 L26 68 Z" fill="#b5651d"></path><rect x="22" y="36" width="40" height="8" fill="#e8e4da"></rect><g fill="#fff"><circle cx="28" cy="48" r="1.5"></circle><circle cx="38" cy="54" r="1.5"></circle><circle cx="48" cy="46" r="1.5"></circle><circle cx="55" cy="56" r="1.5"></circle><circle cx="33" cy="60" r="1.5"></circle></g><line x1="42" y1="8" x2="42" y2="50" stroke="#4a7c59" stroke-width="3"></line><ellipse cx="32" cy="12" rx="9" ry="4.5" fill="#6b9e78" transform="rotate(-25 32 12)"></ellipse><ellipse cx="52" cy="12" rx="9" ry="4.5" fill="#6b9e78" transform="rotate(25 52 12)"></ellipse></svg><b>Stick in gritty mix</b><span>50/50 perlite + seed-starting mix (or perlite + vermiculite). <b>Not potting soil</b> — it holds too much water and rots the stem, the classic cause of "no roots, black mushy base." Insert 1.5″ deep (2 nodes buried), firm gently, water once.</span></div>
+    <div class="tile step"><span class="n">5</span><svg width="84" height="74" viewBox="0 0 84 74"><path d="M20 50 L64 50 L58 70 L26 70 Z" fill="#b5651d"></path><path d="M22 50 C18 24 66 24 62 50" fill="#dceef5" opacity=".7" stroke="#9dbecd" stroke-dasharray="4 3"></path><line x1="42" y1="28" x2="42" y2="54" stroke="#4a7c59" stroke-width="2.5"></line><ellipse cx="35" cy="31" rx="7" ry="3.5" fill="#6b9e78" transform="rotate(-25 35 31)"></ellipse><ellipse cx="49" cy="31" rx="7" ry="3.5" fill="#6b9e78" transform="rotate(25 49 31)"></ellipse><path d="M60 28 L66 22 M66 28 L60 22" stroke="#356" stroke-width="1.5"></path><text x="42" y="14" font-size="8.5" text-anchor="middle" fill="#356" font-family="sans-serif">tent, vent daily</text></svg><b>Humidity tent</b><span>Clear bag propped on sticks (not touching leaves) or a dome. Bright <i>indirect</i> light — direct sun cooks a tented cutting in an hour. 70–75°F; bottom heat helps here too. Flip the bag daily to shed condensation and give 5 min of air.</span></div>
+    <div class="tile step"><span class="n">6</span><svg width="84" height="74" viewBox="0 0 84 74"><line x1="42" y1="6" x2="42" y2="48" stroke="#4a7c59" stroke-width="3"></line><path d="M42 48 C36 52 30 58 26 64 M42 48 C48 52 54 58 58 64 M42 48 C40 56 40 62 40 68 M42 48 C46 55 47 61 47 67" stroke="#e8e0cc" stroke-width="2" fill="none"></path><ellipse cx="32" cy="10" rx="9" ry="4.5" fill="#6b9e78" transform="rotate(-25 32 10)"></ellipse><ellipse cx="52" cy="10" rx="9" ry="4.5" fill="#6b9e78" transform="rotate(25 52 10)"></ellipse><path d="M42 22 C46 20 48 17 48 13" stroke="#8fc79a" stroke-width="2" fill="none"></path><text x="70" y="40" font-size="8.5" text-anchor="end" fill="#6b7a6c" font-family="sans-serif">3–6 wk</text></svg><b>Wait — don't tug</b><span>Roots take 3–6 weeks. Pulling to check snaps the fragile new roots — the sign to watch for instead is <b>fresh new leaf growth</b>. Give it another week after that, then pot on and harden off over several days before full sun.</span></div>
+  </div>
+
+  <h3>Why your cuttings aren't rooting — run this checklist in order</h3>
+  <table>
+    <tbody><tr><th>Suspect</th><th>Tell-tale sign</th><th>Fix</th></tr>
+    <tr><td><b>1. Wrong wood</b></td><td>Cutting was brown, stiff, woody — or carried flowers/buds.</td><td>Take soft green tip growth only; pinch every bud. On a leggy tree, cut a branch back hard now — it will push soft new shoots you can take cuttings from in a few weeks.</td></tr>
+    <tr><td><b>2. Stem rot</b></td><td>Base turns black/mushy; cutting wilts from the bottom.</td><td>Ditch the potting soil for 50/50 perlite mix; water once at sticking, then only when the surface dries.</td></tr>
+    <tr><td><b>3. Dried out</b></td><td>Leaves crisp within days; cutting wilts from the top.</td><td>Humidity tent from minute one; take cuttings in the morning; halve the leaves.</td></tr>
+    <tr><td><b>4. Cooked</b></td><td>Was in a sunny window under plastic.</td><td>Bright shade only while tented.</td></tr>
+    <tr><td><b>5. Impatience</b></td><td>Tugged at 2 weeks, cutting came loose.</td><td>3–6 weeks untouched; new top growth is the signal, not tug resistance.</td></tr>
+    <tr><td><b>6. Dead hormone / no node buried</b></td><td>Everything else right, still nothing.</td><td>Fresh IBA hormone; cut below a node and bury two nodes — roots emerge from nodes, not from between them.</td></tr>
+  </tbody></table>
+
+  <div class="note"><b>For your situation specifically:</b> seeds — cut-test your stash first; if they're hollow, that's the whole answer, and the fix is harvesting fresher pods off the tree (late summer/fall pods drying now are ideal). If they're firm, scarify + overnight soak + heat mat will almost certainly break the logjam. Cuttings — your 6ft scraggly tree is mostly old wood; hard-prune a branch or two, wait 3–4 weeks for soft regrowth, and take those shoots with the perlite + tent + no-flowers protocol. Log every batch in the Journal (＋ Log observation) with date, method, and count so you learn which variables matter in your conditions.</div>
+
+  <p class="small">Sources: <a href="https://gardenofeaden.blogspot.com/2015/05/how-to-propagate-abutilon-from-cuttings.html" target="_blank">The Garden of Eaden — propagating Abutilon from cuttings</a> · <a href="https://www.outsidepride.com/resources/planting/abutilon-planting/" target="_blank">Outsidepride — Abutilon seed planting instructions</a> · <a href="https://greg.app/propagate-abutilon/" target="_blank">Greg — Abutilon propagation guide</a> · <a href="https://davesgarden.com/guides/articles/view/5387" target="_blank">Dave's Garden — About Abutilons</a> · <a href="https://www.theonlinegardencenter.com/how-to-garden/how-to-successfully-grow-chinese-lantern-abutilon-from-cuttings" target="_blank">The Online Garden Center — Abutilon from cuttings</a> · <a href="https://www.gardenguides.com/117629-propagate-abutilon/" target="_blank">Garden Guides — How to propagate Abutilon</a></p>
+</section>
+
+<!-- ============ GENETICS ============ -->
+<section class="tab" id="tab-genetics">
+  <h2>Your breeding population — the cross-reference table</h2>
+  <p>Every seedling under your tree has 'Red Emperor' as its seed parent. The pollen parent is <b>any flowering maple within bee range</b> — a few hundred yards, including varieties you've never seen. So don't read fathers as specific plants; read them as <b>lineage archetypes</b>. Garden abutilons fall into two broad lines whose structural traits travel together, while <b>flower color is an independent axis any donor of either line can carry</b>. To read a seedling: go trait by trait and see which column each structural trait points to. Traits won't all point the same way — that's recombination, and it's the interesting part.</p>
+  <table>
+    <tbody><tr><th>Trait</th><th>♀ 'Red Emperor' (mother — always contributes)</th><th>♂? Hybridum-type donor (archetype)</th><th>♂? Megapotamicum-line donor (archetype)</th></tr>
+    <tr><td><b>Petal color</b></td><td><span class="sw" style="background:#cf4b2e"></span>orange-red / coral with dark red veins — she carries <b>both</b> layers: red over an active yellow ground</td><td>Any — white, yellow, orange, red, pink. Color does not follow lineage; score it separately</td><td>Any — classically yellow under a colored calyx, but not reliably</td></tr>
+    <tr><td><b>Calyx</b></td><td><span class="sw" style="background:#5f2433"></span>dusky maroon, clasping, medium; fat dusky buds</td><td>Usually green, small</td><td>Usually colored (red/maroon), tight or inflated</td></tr>
+    <tr><td><b>Stamen column</b></td><td><span class="sw" style="background:#7a1424"></span>dark red cluster, visible right at the mouth</td><td>Often pale yellow, held near mouth</td><td>Often dark anthers, protruding</td></tr>
+    <tr><td><b>Flower form</b></td><td>Rounded pendant lantern — half-open bell, ruffled overlapping petals</td><td>Open bowl / globed bell, broad overlapping petals</td><td>Slender lantern / narrow tube</td></tr>
+    <tr><td><b>Veining</b></td><td>Strong — dark red veins on orange-red ground</td><td>Often strong (redvein heritage widespread in hybridums)</td><td>Usually faint</td></tr>
+    <tr><td><b>Leaf</b></td><td>Broad, 5-veined but 3-lobed — long pointed center lobe, short side lobes, basal lobes suppressed; medium sinus</td><td>Broad, maple-lobed, 5–7 veins</td><td>Narrow, unlobed to shallowly lobed, small</td></tr>
+    <tr><td><b>Habit</b></td><td>Upright, 6ft+</td><td>Upright shrub</td><td>Arching / trailing, thin whippy stems</td></tr>
+  </tbody></table>
+  <p class="small">These are archetypes, not plants. If you ever positively identify a specific local donor, record it in a seedling's parentage field — but the archetype reading stands on its own. A seedling whose structural traits match <i>neither</i> column suggests recombination or a lineage-blended donor (most modern cultivars are themselves crosses between the two lines).</p>
+
+  <h2>The two-layer color system — how to decode any petal color</h2>
+  <p>Petal color isn't one trait. It's two independent pigment layers stacked — and your mother is living proof: her orange-red <b>is</b> the red layer laid over an active yellow ground, with extra anthocyanin bunched along the veins. Every seedling color is a combination of layer presence and dose:</p>
+  <table>
+    <tbody><tr><th>Red layer<br><span class="small">(anthocyanin, in cell sap)</span></th><th>Yellow ground<br><span class="small">(carotenoid, in plastids)</span></th><th>What you see</th><th>What it tells you</th></tr>
+    <tr><td>strong</td><td>weak/none</td><td><span class="sw" style="background:#7a1424"></span>crimson, deep red</td><td>A <b>higher</b> red dose than the mother herself (she reads orange-red). Doubled or stronger red alleles — selfed or red father. Keeper.</td></tr>
+    <tr><td>present</td><td>present</td><td><span class="sw" style="background:#d96a3c"></span><span class="sw" style="background:#e8975c"></span>orange → salmon → <b>apricot</b></td><td><b>The mother's own palette</b> — since she carries both layers, expect this as the modal seedling color <i>regardless of father</i>. Paler (apricot/salmon) = lower red dose, which leans yellow-father but doesn't prove it. Color alone can't ID the father here; lean on leaf, form, and habit.</td></tr>
+    <tr><td>none</td><td>present</td><td><span class="sw" style="background:#e8b23c"></span>clear yellow</td><td>Seedling got a non-functional red allele from BOTH sides — proof the mother is a hidden carrier (Rr). Genetically the most informative seedlings you can get. Tally them.</td></tr>
+    <tr><td>present</td><td>none</td><td><span class="sw" style="background:#d97a94"></span>pink, rose</td><td>Red layer at low dose over a white ground — a dilution recombinant. Uncommon from your population; worth keeping.</td></tr>
+    <tr><td>none</td><td>none</td><td><span class="sw" style="background:#f2ecdc"></span>white, cream</td><td>Both layers off. Rare double-recessive; definitely name it.</td></tr>
+  </tbody></table>
+  <p class="small">Check the red layer anywhere, not just petals: red-flushed stems and petioles on a 4–6-leaf seedling predict the red layer in the eventual flower — your earliest sorting tool.</p>
+
+  <h2>Trait decoder — read any seedling without asking anyone</h2>
+  <table>
+    <tbody><tr><th>You observe…</th><th>Genetic reading</th><th>Points to father…</th></tr>
+    <tr><td>Deeper crimson than the mother</td><td>Anthocyanin dose exceeds hers — extra or stronger red alleles</td><td>Selfed (dose doubling), or a red-flowered father</td></tr>
+    <tr><td>Orange / coral petals (mother-like)</td><td>Her own two-layer palette reproduced at similar dose</td><td>Uninformative alone — read leaf, form, habit instead</td></tr>
+    <tr><td>Apricot / salmon (paler than mother)</td><td>Red layer diluted — fewer red alleles than she has</td><td>Leans yellow-flowered father, or selfed dilution</td></tr>
+    <tr><td>Clear yellow petals, zero red anywhere (check stems)</td><td>rr — non-functional red allele from both parents; mother confirmed as carrier</td><td>Any yellow-flowered donor (guaranteed to pass r) — or a heterozygous red donor, or selfed</td></tr>
+    <tr><td>Dusky, flushed, or red calyx (any petal color)</td><td>The colored-calyx factor — strongly expressed, near-dominant (mother's calyx and buds are dusky maroon)</td><td>Mother's doing; reinforced by any megapotamicum-line donor</td></tr>
+    <tr><td>Green calyx</td><td>Seedling escaped the colored-calyx factor — uncommon from this mother</td><td>A green-calyxed donor (hybridum-type lean); worth logging</td></tr>
+    <tr><td>Dark stamen column on non-red petals</td><td>Stamen anthocyanin separated from petal anthocyanin — a clean recombinant</td><td>Mother, or any dark-stamened donor</td></tr>
+    <tr><td>Strong contrasting petal veins</td><td>Inherited from the mother — she is strongly veined (redvein / <i>A. pictum</i> heritage); expected in most offspring</td><td>Uninformative. A vein-<b>free</b> flower is the notable find</td></tr>
+    <tr><td>Rounded pendant lantern (mother-like)</td><td>Mother's form carried strongly (form is polygenic — a blend, not a switch)</td><td>Any; mother's share dominated</td></tr>
+    <tr><td>Globed / open-bowl form</td><td>Father's bowl genes dominated the blend</td><td>A bowl-type hybridum donor</td></tr>
+    <tr><td>Slender narrow tube</td><td><i>megapotamicum</i>-line form surfacing — neither the mother's nor the bowl type</td><td>A megapotamicum-line donor</td></tr>
+    <tr><td>Narrow, unlobed leaves</td><td><i>megapotamicum</i>-line leaf; mother's broad lobed leaf lost the blend</td><td>A megapotamicum-line donor — that lineage's most distinctive marker</td></tr>
+    <tr><td>Broad 3-lobed leaf, long center lobe</td><td>Mother-like — her signature leaf</td><td>Any; mother's share dominated</td></tr>
+    <tr><td>Strongly 5-lobed leaf</td><td>The mother carries the 5-vein architecture with basal lobes suppressed — a strongly 5-lobed seedling means those lobes got switched on (her hidden potential, or hybridum father genes)</td><td>Either; check vein count first — 7 veins would mean outside genes for sure</td></tr>
+    <tr><td>Arching, lax habit</td><td>Fountain habit from the <i>megapotamicum</i> line</td><td>A megapotamicum-line donor</td></tr>
+    <tr><td>Very upright habit</td><td>Mother-like (or hybridum father)</td><td>Any</td></tr>
+    <tr><td>Yellow leaf mottling</td><td>⚠ Not genetic — Abutilon mosaic virus, spread by whitefly. Ignore for parentage.</td><td>—</td></tr>
+  </tbody></table>
+
+  <div class="note"><b>Worked example.</b> <i>"Narrow leaves, warm apricot flowers, globed shape, very upright, dark stamens."</i> Decode line by line: <b>apricot</b> = the mother's palette at lower red dose — leans yellow-flowered donor but doesn't prove it (she carries the yellow ground herself). <b>Narrow leaves</b> → megapotamicum-line marker; the strongest clue here. <b>Globed flower</b> → hybridum bowl form — recombined against the leaf, so the donor likely blends both lineages (most modern cultivars do). <b>Very upright</b> → mother's habit won that blend. <b>Dark stamens</b> → mother's stamen anthocyanin carried onto paler petals — a true recombinant. Verdict: 'Red Emperor' × a yellow-flowered donor with megapotamicum-line leaf traits. Log the archetype ("RE × yellow mega-line donor?"), not a variety name, and check siblings for the same leaf.</div>
+
+  <h3>Why one red tree throws so much variety</h3>
+  <p>'Red Emperor' is itself a complex hybrid (<i>A. × hybridum</i>), which means she is heterozygous at many genes — carrying hidden alleles her own flowers never show. So even <b>selfed</b> seed segregates: mostly orange-reds like her, but deeper crimsons, paler apricots, pinks, and the occasional yellow are expected without any foreign pollen at all. A yellow seedling is your proof of what she carries:</p>
+  <table class="punnett sans">
+    <tbody><tr><th></th><th>R (from mother)</th><th>r (from mother)</th></tr>
+    <tr><th>r (yellow father)</th><td style="background:#f7e3d0"><span class="sw" style="background:#d96a3c"></span>Rr — red layer ON → red/orange</td><td style="background:#fdf3d7"><span class="sw" style="background:#e8b23c"></span>rr — red layer OFF → yellow</td></tr>
+    <tr><th>r (yellow father)</th><td style="background:#f7e3d0"><span class="sw" style="background:#d96a3c"></span>Rr — red layer ON → red/orange</td><td style="background:#fdf3d7"><span class="sw" style="background:#e8b23c"></span>rr — red layer OFF → yellow</td></tr>
+  </tbody></table>
+  <p class="small">If she's a carrier (Rr), red × yellow gives ≈ half pigmented, half yellow. If she's RR, zero yellows — ever. <b>Your running tally in the Journal is the experiment:</b> once you've logged ~10 seedlings from yellow-father crosses, the ratio answers her genotype. Dose genes on top of this on/off switch smear the pigmented half into crimson-through-apricot, which is why you get a spectrum rather than two neat piles.</p>
+
+  <h3>Leveling up: controlled crosses</h3>
+  <p>Open-pollinated seed tells you the mother; the decoder above only estimates the father. To know both: pick a mother bud about to open, remove petals and anthers <i>before</i> pollen sheds (emasculation), brush on your chosen father's pollen, bag the flower in mesh, and tag it. Then the seedling's traits become real data instead of detective work. Selfing an interesting F1 (to get an F2) is where hidden recessives segregate out in force — that's where the surprises live.</p>
+  <div class="note"><b>Naming note:</b> botanists moved the ornamental flowering maples from <i>Abutilon</i> to <i>Callianthe</i>. Horticulture still says Abutilon; either is correct in your records.</div>
+</section>
+
+<!-- ============ PARENT ID ============ -->
+<section class="tab" id="tab-parent">
+  <h2>Identifying your mystery crimson mother</h2>
+  <p>Photo-confirmed profile: 6ft+, scraggly · pendant <b>rounded lanterns</b>, half-open with ruffled mouths · petals orange-red/coral with strong darker veining · buds and calyx dusky maroon, clasping · pedicels and young stems dark red-black · dark stamen cluster at the mouth · broad 3-lobed leaves with a long pointed center lobe, short side lobes, and pale palmate veins.</p>
+  <table>
+    <tbody><tr><th>Candidate</th><th>Flower</th><th>Fit</th></tr>
+    <tr><td><b>'Red Emperor'</b><br><span class="small">(Abutilon × hybridum)</span></td><td>Orange-red pendant lanterns, half-open with ruffled mouths and darker veining; dusky maroon buds and calyx on dark pedicels; maple-lobed leaves; fast upright growth to 5–8ft</td><td><b>★ Working ID — matches Dan's photo</b> point for point: flower form, veined orange-red petals, dusky buds, dark pedicels, leaf, and height.</td></tr>
+    <tr><td><b><i>Abutilon megapotamicum</i> 'Red'</b><br><span class="small">(Callianthe megapotamica 'Red')</span></td><td>Slender ~2″ pendant flower, red petals with deeper red veins, red calyx, dark stamens; lax 5–8ft growth</td><td>Runner-up. Same all-red slender-flower scheme, but leaves are long and narrow (often unlobed) and stems whippy/trailing — if your leaves are broad and sharply lobed, 'Red Emperor' fits better.</td></tr>
+    <tr><td><b>'Nabob'</b></td><td>Deep crimson, but <b>broad bowl-shaped</b> 2–3″ flowers, dark maple leaves, upright to 8ft</td><td>Right color &amp; size, wrong flower shape — rule out if flowers are clearly narrow.</td></tr>
+    <tr><td><b>'Red Monarch' / 'Bella Red'</b></td><td>Red, open bell/bowl hybridum type</td><td>Same objection: too bell-shaped. Calyx typically green.</td></tr>
+    <tr><td><b>Straight <i>A. megapotamicum</i></b></td><td>Red calyx but <b>yellow</b> petals, small unlobed leaves</td><td>Ruled out — your petals are crimson. But your tree is likely its descendant.</td></tr>
+    <tr><td><b>Unnamed seedling</b></td><td>—</td><td>Very possible! Abutilons self-sow; your tree may itself be a neighborhood cross that no catalogue lists. If so, it deserves its own name — you're allowed to give it one.</td></tr>
+  </tbody></table>
+  <h3>Tie-breaker measurements to take</h3>
+  <table>
+    <tbody><tr><th>Measure</th><th>'Red Emperor' says</th><th>megapotamicum 'Red' says</th></tr>
+    <tr><td>Leaf</td><td>Broad 3-lobed maple leaf, long center lobe</td><td>Long, narrow, often unlobed</td></tr>
+    <tr><td>Stems / habit</td><td>Shrubby, upright, stouter</td><td>Thin, whippy, arching/trailing</td></tr>
+    <tr><td>Flower silhouette</td><td>Rounded pendant lantern, half-open, ruffled mouth; dark stamens right at the mouth (matches Dan's photo)</td><td>≥ 1.5× longer than wide, tube stays narrow, petals barely exceed calyx</td></tr>
+    <tr><td>Calyx</td><td>Red, matches petals</td><td>Red, tight, angular</td></tr>
+    <tr><td>Pedicel (flower stalk)</td><td>Moderate</td><td>Long, threadlike, flowers strung along stems</td></tr>
+  </tbody></table>
+  <p class="small">Working ID: <b>'Red Emperor'</b>, now photo-supported. The key genetic consequence: the mother is <b>not</b> a solid deep crimson — she's an orange-red two-layer flower (red anthocyanin over a yellow ground) with strong veining, which reframes how her seedlings' colors are read (see Genetics).</p>
+  <p class="small">Sources: <a href="https://www.gardenexpress.com.au/product/abutilon-red-emperor/" target="_blank">Garden Express — Abutilon 'Red Emperor'</a> · <a href="https://www.theplantcompany.co.nz/shop/product/shrubs/abutilon-red-emperor" target="_blank">The Plant Company — 'Red Emperor'</a> · <a href="https://xeraplants.com/plants/abutilon-megapotamicum-red/" target="_blank">Xera Plants — A. megapotamicum 'Red'</a> · <a href="https://plants.ces.ncsu.edu/plants/abutilon/" target="_blank">NC State Extension — Abutilon</a></p>
+</section>
+</main>
+
+<!-- ============ FORM DIALOG ============ -->
+<dialog id="dlg">
+  <div class="dhead" id="dtitle">Edit: S-01 'Warm Apricot'</div>
+  <form class="f" method="dialog" onsubmit="saveEntry(event)">
+    <input type="hidden" id="f_id" value="p1787083702746">
+    <div class="frow">
+      <div class="fld"><label>Name / ID *</label><input id="f_name" required="" placeholder="e.g. S-01 'Ember'"></div>
+      <div class="fld"><label>Suspected parentage</label><input id="f_parents" placeholder="Mother × hybridum-type donor?"></div>
+      <div class="fld"><label>Date found / sown</label><input type="date" id="f_date"></div>
+      <div class="fld"><label>Stage</label><select id="f_stage"><option>seedling</option><option>juvenile</option><option>first bloom</option><option>mature</option><option>mother plant</option></select></div>
+      <div class="fld"><label>Leaf lobes</label><select id="f_leaf"><option>unlobed</option><option>3-lobed</option><option selected="">5-lobed</option></select></div>
+      <div class="fld"><label>Sinus depth (lobe cut)</label><select id="f_sinus"><option>—</option><option>shallow</option><option>medium</option><option>deep</option></select></div>
+      <div class="fld"><label>Primary veins (from base)</label><select id="f_veincount"><option>—</option><option>3</option><option>5</option><option>7</option></select></div>
+      <div class="fld"><label>Leaf margin</label><select id="f_margin"><option>serrate (sharp teeth)</option><option>crenate (rounded)</option><option>nearly entire</option></select></div>
+      <div class="fld"><label>Stem color</label><select id="f_stem"><option>green</option><option>red-flushed</option><option>dark red</option></select></div>
+      <div class="fld"><label>Habit</label><select id="f_habit"><option>upright</option><option>arching</option><option>trailing / lax</option><option>too young to tell</option></select></div>
+      <div class="fld"><label>Flower form / aperture</label><select id="f_form"><option value="">not yet bloomed</option><option>tubular / barely open</option><option>waisted lantern</option><option>bell-shaped</option><option>partially flared</option><option>globe / rounded</option><option>widely flared</option><option>flat / fully open</option></select></div>
+      <div class="fld"><label>Veining</label><select id="f_vein"><option>—</option><option>none</option><option>subtle</option><option>strong contrast</option></select></div>
+      <div class="fld"><label>Flower size (across mouth)</label><select id="f_fsize"><option>—</option><option>small (&lt;1.5″)</option><option>medium (1.5–2.5″)</option><option>large (2.5–3″)</option><option>very large (3″+)</option></select></div>
+      <div class="fld"><label>Petal edge</label><select id="f_edge"><option>—</option><option>smooth</option><option>ruffled</option><option>fluted</option><option>pleated</option><option>twisted</option><option>edged (light line)</option></select></div>
+      <div class="fld"><label>Doubling</label><select id="f_doubling"><option>—</option><option>single</option><option>partially doubled</option><option>fully double</option></select></div>
+      <div class="fld"><label>Substance</label><select id="f_substance"><option>—</option><option>thin / translucent</option><option>medium</option><option>heavy / waxy</option></select></div>
+      <div class="fld"><label>Finish</label><select id="f_finish"><option>—</option><option>matte / clear</option><option>glossy / shiny</option><option>glowing / luminous</option><option>silvery</option></select></div>
+      <div class="fld"><label>Posture</label><select id="f_posture"><option>—</option><option>very pendant</option><option>pendant</option><option>semi-pendant</option><option>horizontal</option><option>upfacing</option></select></div>
+      <div class="fld"><label>Color pattern</label><select id="f_pattern"><option>—</option><option>self (uniform)</option><option>dark eye</option><option>lighter center</option><option>flushed base</option><option>edged margin</option></select></div>
+      <div class="fld"><label>Color aging</label><input id="f_aging" placeholder="e.g. yellow → apricot with age"></div>
+      <div class="fld"><label>Petal color</label><div class="colorrow"><input type="color" id="f_petal" value="#c94f4f"><input id="f_petalname" placeholder="name, e.g. salmon"></div></div>
+      <div class="fld"><label>Calyx color</label><div class="colorrow"><input type="color" id="f_calyx" value="#6b8f5e"><input id="f_calyxname" placeholder="green / red…"></div></div>
+      <div class="fld"><label>Calyx shape</label><select id="f_calyxshape"><option>—</option><option>tight / clasping</option><option>flared / reflexed</option><option>inflated / ribbed</option></select></div>
+      <div class="fld"><label>Calyx size (vs petals)</label><select id="f_calyxsize"><option>—</option><option>small</option><option>medium</option><option>large / showy</option></select></div>
+      <div class="fld"><label>Stamen column color</label><div class="colorrow"><input type="color" id="f_stamen" value="#c9a227"><input id="f_stamenname" placeholder="yellow / dark red…"></div></div>
+      <div class="fld"><label>Vigor (1–5)</label><select id="f_vigor"><option>—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+    </div>
+    <div class="fld"><label>Close cultivars (up to 3 lookalikes)</label>
+      <div class="frow" style="margin-bottom:8px">
+        <input id="f_cv1" placeholder="e.g. 'Victor Reiter'">
+        <input id="f_cv2" placeholder="second…">
+      </div>
+      <input id="f_cv3" placeholder="third…">
+    </div>
+    <div class="fld"><label>Comparison notes — similar / differing traits</label><textarea id="f_cvnotes" rows="2" placeholder="e.g. flower form matches 'X' but veining stronger; calyx greener than 'Y'"></textarea></div>
+    <div class="fld"><label>Photos — up to 5 (flower, leaf, calyx, habit…)</label>
+      <div class="photorow">
+        <button type="button" class="btn" onclick="document.getElementById('f_photo').click()">Add photos…</button>
+        <span class="small" id="f_photonote"></span>
+      </div>
+      <input type="file" id="f_photo" accept="image/*" multiple="" style="display:none" onchange="pickPhoto(event)">
+      <div id="f_photothumbs"></div>
+    </div>
+    <div class="fld"><label>Notes</label><textarea id="f_notes" rows="2" placeholder="Anything else — hairiness, calyx shape, scent, aphid magnet…"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button type="button" class="btn" onclick="dlg.close()">Cancel</button>
+      <button type="submit" class="btn pri">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="logdlg">
+  <div class="dhead" id="logtitle">Log observation</div>
+  <form class="f" method="dialog" onsubmit="saveLog(event)">
+    <input type="hidden" id="log_id">
+    <div class="fld"><label>Observation (dated today)</label><textarea id="log_text" rows="3" placeholder="e.g. First flower bud forming — calyx looks red-flushed"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button type="button" class="btn" onclick="logdlg.close()">Cancel</button>
+      <button type="submit" class="btn pri">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script id="seed" type="application/json">[]</script>
+<script>
+/* APP_VERSION is bumped every time the app itself changes. A file downloaded via
+   "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
+const APP_VERSION='36';
+(function(){
+  const saved=document.documentElement.getAttribute('data-saved');
+  document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
+})();
+const KEY='abutilon-journal-v1';
+let data=[];
+try{data=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){data=[]}
+if(!Array.isArray(data))data=[];
+if(!data.length){
+  /* main store empty — try the rolling backup key */
+  try{const b=JSON.parse(localStorage.getItem(KEY+'-bak')||'[]');if(Array.isArray(b)&&b.length){data=b}}catch(e){}
+}
+if(!data.length){
+  /* no browser data — fall back to data baked into this file (portable copy) */
+  try{const s=JSON.parse(document.getElementById('seed').textContent);if(Array.isArray(s)&&s.length){data=s;persist()}}catch(e){}
+}
+if(!data.length){
+  data=[{id:'m1',name:"Mother tree — 'Red Emperor' (working ID)",parents:'unknown — see Parent ID tab',date:'',stage:'mother plant',
+    leaf:'3-lobed',sinus:'medium',veincount:'5',margin:'serrate (sharp teeth)',stem:'dark red',habit:'upright',form:'bell-shaped',vein:'strong contrast',
+    fsize:'medium (1.5–2.5″)',edge:'ruffled',doubling:'single',substance:'medium',posture:'pendant',
+    petal:'#cf4b2e',petalname:'orange-red, dark veins',calyx:'#5f2433',calyxname:'dusky maroon',stamen:'#7a1424',stamenname:'dark red',
+    calyxshape:'tight / clasping',calyxsize:'medium',
+    vigor:'4',notes:'6ft+, scraggly. Pendant rounded lanterns, half-open with ruffled mouths; orange-red petals with strong darker veining; dusky maroon buds & calyx; dark pedicels; dark stamens at the mouth; broad 3-lobed leaves — long pointed center lobe, short side lobes.',
+    logs:[{d:new Date().toISOString().slice(0,10),t:'Catalogued as the seed parent of all yard seedlings (photo-confirmed).'}]}];
+  persist();
+}
+/* one-time correction: fix the mother entry if it still carries the pre-photo defaults */
+(function(){
+  const m=data.find(x=>x.id==='m1');
+  if(m&&m.petal==='#7a1424'&&m.form==='slender lantern'){
+    Object.assign(m,{name:"Mother tree — 'Red Emperor' (working ID)",form:'pendant bell',vein:'strong contrast',stem:'dark red',
+      petal:'#cf4b2e',petalname:'orange-red, dark veins',calyx:'#5f2433',calyxname:'dusky maroon',stamenname:'dark red',
+      calyxshape:'tight / clasping',calyxsize:'medium',
+      notes:'6ft+, scraggly. Pendant rounded lanterns, half-open with ruffled mouths; orange-red petals with strong darker veining; dusky maroon buds & calyx; dark pedicels; dark stamens at the mouth; broad sharp 3–5-lobed leaves.'});
+    m.logs=m.logs||[];
+    m.logs.push({d:new Date().toISOString().slice(0,10),t:'Traits corrected from photo — orange-red veined pendant lantern, dusky maroon clasping calyx, not solid crimson.'});
+    persist();
+  }
+})();
+/* decouple legacy leaf values into lobe count + sinus depth */
+(function(){
+  let fix=false;
+  data.forEach(x=>{
+    if(x.leaf==='3-lobed shallow'){x.leaf='3-lobed';x.sinus=x.sinus||'shallow';fix=true}
+    else if(x.leaf==='3-lobed deep'){x.leaf='3-lobed';x.sinus=x.sinus||'deep';fix=true}
+    if(x.id==='m1'&&!x.sinus){x.sinus='medium';fix=true}
+    if(x.id==='m1'&&x.leaf==='5-lobed'){
+      x.leaf='3-lobed';
+      x.notes=(x.notes||'').replace('broad sharp 3–5-lobed leaves','broad 3-lobed leaves — long pointed center lobe, short side lobes');
+      x.logs=x.logs||[];x.logs.push({d:new Date().toISOString().slice(0,10),t:'Leaf corrected: 3-lobed — long pointed center lobe, short side lobes.'});
+      fix=true;
+    }
+    if(x.id==='m1'&&!x.veincount){
+      x.veincount='5';
+      x.logs=x.logs||[];x.logs.push({d:new Date().toISOString().slice(0,10),t:'5 primary palmate veins — basal vein pair present but its lobes barely express (weakly 5-lobed).'});
+      fix=true;
+    }
+    /* v17: normalize legacy form values to the MBN aperture ladder */
+    const formMap={'pendant bell':'bell-shaped','flared bell':'partially flared','open bowl':'widely flared','slender lantern':'waisted lantern','slender lantern (waisted)':'waisted lantern'};
+    if(formMap[x.form]){x.form=formMap[x.form];fix=true}
+    if(x.id==='m1'&&!x.fsize){
+      Object.assign(x,{fsize:'medium (1.5–2.5″)',edge:'ruffled',doubling:'single',substance:'medium',posture:'pendant'});
+      x.logs=x.logs||[];x.logs.push({d:new Date().toISOString().slice(0,10),t:'MBN flower descriptors added: medium size, bell-shaped, ruffled edge, single, pendant.'});
+      fix=true;
+    }
+  });
+  if(fix)persist();
+})();
+const $=id=>document.getElementById(id);
+const dlg=$('dlg');
+
+/* tabs */
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');$('tab-'+b.dataset.t).classList.add('on');
+});
+
+var storageOK=true;
+function persist(changedIds){
+  persistLocal();
+  if(Array.isArray(changedIds)&&changedIds.length)markChanged(changedIds);
+  scheduleSync();
+}
+function persistLocal(){
+  const json=JSON.stringify(data);
+  try{
+    const prev=localStorage.getItem(KEY);
+    if(prev&&prev!==json)localStorage.setItem(KEY+'-bak',prev);
+    localStorage.setItem(KEY,json);
+    storageOK=true;
+    try{localStorage.setItem(KEY+'-dirty',String((parseInt(localStorage.getItem(KEY+'-dirty')||'0')||0)+1))}catch(e){}
+  }catch(err){
+    storageOK=false;
+    banner('⚠ Browser storage is FULL — your latest changes are NOT safely stored. Click "Save journal file" RIGHT NOW to preserve them, then remove some photos.');
+  }
+  idbSave(json);
+  saveState();
+}
+function saveState(){
+  const el=document.getElementById('savestate');
+  if(!el)return;
+  const d=parseInt(localStorage.getItem(KEY+'-dirty')||'0')||0;
+  const ls=localStorage.getItem(KEY+'-lastsave')||'';
+  let t=storageOK?'· storage ✓':'· STORAGE FAILING — save a journal file now!';
+  if(d>0)t+=' · '+d+' change'+(d>1?'s':'')+' not yet in a saved file';
+  else if(ls)t+=' · file saved '+ls;
+  el.textContent=t;
+  el.style.color=(storageOK&&d===0)?'':(storageOK?'#8a6a1f':'#a33');
+  el.style.fontWeight=(storageOK&&d===0)?'':'600';
+  const sb=document.getElementById('savebtn');
+  if(sb)sb.classList.toggle('pri',d>0);
+}
+function banner(msg,actionLabel,actionFn){
+  let b=document.getElementById('bigbanner');
+  if(!b){b=document.createElement('div');b.id='bigbanner';document.body.prepend(b)}
+  b.innerHTML='';
+  b.appendChild(Object.assign(document.createElement('span'),{textContent:msg}));
+  if(actionLabel&&actionFn){
+    const a=document.createElement('button');a.className='btn';a.textContent=actionLabel;a.onclick=actionFn;
+    b.appendChild(a);
+  }
+  const x=document.createElement('button');x.className='btn';x.textContent='dismiss';x.onclick=()=>b.remove();
+  b.appendChild(x);
+}
+/* IndexedDB mirror — far larger quota than localStorage and evicted less aggressively */
+function idbOpen(cb){
+  try{
+    const rq=indexedDB.open('abutilon-journal',1);
+    rq.onupgradeneeded=()=>{rq.result.createObjectStore('kv')};
+    rq.onsuccess=()=>cb(rq.result);
+    rq.onerror=()=>cb(null);
+  }catch(e){cb(null)}
+}
+function idbSave(json){
+  idbOpen(db=>{
+    if(!db)return;
+    try{
+      const tx=db.transaction('kv','readwrite');
+      const st=tx.objectStore('kv');
+      st.put(json,'data');st.put(Date.now(),'ts');
+    }catch(e){}
+  });
+}
+function idbRestoreCheck(){
+  idbOpen(db=>{
+    if(!db)return;
+    try{
+      const st=db.transaction('kv').objectStore('kv');
+      const rq=st.get('data'),rt=st.get('ts');
+      rq.onsuccess=()=>{
+        try{
+          const mirror=JSON.parse(rq.result||'[]');
+          if(Array.isArray(mirror)&&mirror.length>data.length){
+            const ts=rt&&rt.result?new Date(rt.result).toLocaleString():'unknown time';
+            banner('Backup found: '+mirror.length+' entries (saved '+ts+') — more than the '+data.length+' currently loaded.','Restore backup',()=>{
+              data=mirror;persist(mirror.map(x=>x.id));render();
+              document.getElementById('bigbanner').remove();
+              toast('Backup restored — now click "Save journal file" to make it permanent.');
+            });
+          }
+        }catch(e){}
+      };
+    }catch(e){}
+  });
+}
+function seedRestoreCheck(){
+  try{
+    const s=JSON.parse(document.getElementById('seed').textContent);
+    if(Array.isArray(s)&&s.length>data.length){
+      banner('This file has '+s.length+' entries baked into it — more than the '+data.length+' loaded from browser storage.','Use the file data',()=>{
+        data=s;persist(s.map(x=>x.id));render();
+        const b=document.getElementById('bigbanner');if(b)b.remove();
+        toast('File data loaded — click "Save journal file" to lock it in.');
+      });
+    }
+  }catch(e){}
+}
+window.addEventListener('beforeunload',ev=>{if(!storageOK){ev.preventDefault();ev.returnValue=''}});
+
+/* ===== Supabase sync (local-first; storage above remains the field cache) ===== */
+const SUPA_URL='https://hpdotarafccrwowlbyzw.supabase.co';
+const SUPA_KEY='sb_publishable_tnC1Nq4XIYffqGO8mOaJRQ_r40MBF5v';
+const SYNCKEY=KEY+'-lastsync';
+function markChanged(ids){
+  try{
+    const p=new Set(JSON.parse(localStorage.getItem(KEY+'-pending')||'[]'));
+    ids.forEach(i=>p.add(i));
+    localStorage.setItem(KEY+'-pending',JSON.stringify([...p]));
+  }catch(e){}
+}
+function tomb(id){
+  try{
+    const t=JSON.parse(localStorage.getItem(KEY+'-tombs')||'[]');
+    t.push({id,ts:Date.now()});
+    localStorage.setItem(KEY+'-tombs',JSON.stringify(t));
+  }catch(e){}
+}
+function pushOrder(){
+  try{localStorage.setItem(KEY+'-orderts',String(Date.now()))}catch(e){}
+  markChanged(['__order']);
+}
+const SUPA_HDRS={'apikey':SUPA_KEY,'Content-Type':'application/json'};
+
+/* ===== magic-link auth ===== */
+const AUTHKEY=KEY+'-auth';
+function getAuth(){try{return JSON.parse(localStorage.getItem(AUTHKEY)||'null')}catch(e){return null}}
+function setAuth(s){
+  try{s?localStorage.setItem(AUTHKEY,JSON.stringify(s)):localStorage.removeItem(AUTHKEY)}catch(e){}
+  updateAuthUI();
+}
+function authHeaders(){
+  const s=getAuth(),h=Object.assign({},SUPA_HDRS);
+  if(s&&s.at)h['Authorization']='Bearer '+s.at;
+  return h;
+}
+function updateAuthUI(){
+  const s=getAuth();
+  const p=document.getElementById('authpanel');
+  if(p)p.style.display=s?'none':'block';
+  const so=document.getElementById('signoutbtn');
+  if(so)so.style.display=s?'block':'none';
+  const st=document.getElementById('authstate');
+  if(st)st.textContent=s?('· signed in'+(s.email?' as '+s.email:'')):'· signed out';
+}
+function signOut(){setAuth(null);setSync('offline');toast('Signed out — entries stay local until you sign back in.')}
+async function ensureAuth(){
+  let s=getAuth();
+  if(!s)return null;
+  if(Date.now()<(s.exp||0)-90000)return s;
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:SUPA_HDRS,body:JSON.stringify({refresh_token:s.rt})});
+    if(!r.ok)throw 0;
+    const j=await r.json();
+    s={at:j.access_token,rt:j.refresh_token,exp:Date.now()+((j.expires_in||3600)-60)*1000,email:(j.user&&j.user.email)||s.email};
+    setAuth(s);
+    return s;
+  }catch(e){setAuth(null);return null}
+}
+async function sendLink(){
+  const email=document.getElementById('auth_email').value.trim();
+  const msg=document.getElementById('authmsg');
+  if(!email){msg.textContent='Enter your email first.';return}
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/otp?redirect_to='+encodeURIComponent(location.href.split('#')[0]),{method:'POST',headers:SUPA_HDRS,body:JSON.stringify({email,create_user:true})});
+    if(!r.ok)throw new Error(await r.text());
+    try{localStorage.setItem(KEY+'-authemail',email)}catch(e){}
+    msg.textContent='Sent! Open the email, then click the link — or type the 6-digit code above.';
+  }catch(e){msg.textContent='Could not send: '+e.message}
+}
+async function verifyCode(){
+  const email=document.getElementById('auth_email').value.trim()||localStorage.getItem(KEY+'-authemail')||'';
+  const code=document.getElementById('auth_code').value.trim();
+  const msg=document.getElementById('authmsg');
+  if(!email||!code){msg.textContent='Need both your email and the code.';return}
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/verify',{method:'POST',headers:SUPA_HDRS,body:JSON.stringify({type:'email',email,token:code})});
+    if(!r.ok)throw new Error(await r.text());
+    const j=await r.json();
+    setAuth({at:j.access_token,rt:j.refresh_token,exp:Date.now()+((j.expires_in||3600)-60)*1000,email});
+    toast('Signed in as '+email);
+    syncNow();
+  }catch(e){msg.textContent='Verify failed: '+e.message}
+}
+/* capture tokens when arriving from a magic-link redirect */
+(function(){
+  const h=location.hash;
+  if(h&&h.indexOf('access_token=')>-1){
+    const p=new URLSearchParams(h.slice(1));
+    if(p.get('access_token')){
+      setAuth({at:p.get('access_token'),rt:p.get('refresh_token'),exp:Date.now()+((parseInt(p.get('expires_in'))||3600)-60)*1000,email:''});
+      try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+    }
+  }
+})();
+async function supaUpsert(rows){
+  const r=await fetch(SUPA_URL+'/rest/v1/plants?on_conflict=id',{
+    method:'POST',
+    headers:Object.assign({'Prefer':'resolution=merge-duplicates,return=minimal'},authHeaders()),
+    body:JSON.stringify(rows)
+  });
+  if(!r.ok)throw new Error('push '+r.status+': '+await r.text().catch(()=>''));
+}
+let syncTimer=null;
+function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,2500)}
+async function syncNow(){
+  if(typeof fetch==='undefined')return;
+  if(!navigator.onLine){setSync('offline');return}
+  setSync('syncing');
+  await ensureAuth();
+  try{
+    /* 1. push deletions */
+    const tombs=JSON.parse(localStorage.getItem(KEY+'-tombs')||'[]');
+    if(tombs.length){
+      await supaUpsert(tombs.map(t=>({id:t.id,data:{},deleted:true,updated_at:new Date(t.ts).toISOString()})));
+      localStorage.setItem(KEY+'-tombs','[]');
+    }
+    /* 2. push pending changes */
+    const pend=JSON.parse(localStorage.getItem(KEY+'-pending')||'[]');
+    const rows=[];
+    pend.forEach(id=>{
+      if(id==='__order'){
+        const ts=parseInt(localStorage.getItem(KEY+'-orderts')||'0')||Date.now();
+        rows.push({id:'__order',data:{ids:data.map(x=>x.id),_ts:ts},deleted:false,updated_at:new Date(ts).toISOString()});
+      }else{
+        const e=data.find(x=>x.id===id);
+        if(e)rows.push({id:e.id,data:e,deleted:false,updated_at:new Date(e._ts||Date.now()).toISOString()});
+      }
+    });
+    if(rows.length){
+      await supaUpsert(rows);
+      localStorage.setItem(KEY+'-pending','[]');
+    }
+    /* 3. pull changes since last sync */
+    const first=!localStorage.getItem(SYNCKEY);
+    const last=localStorage.getItem(SYNCKEY)||'1970-01-01T00:00:00Z';
+    const r=await fetch(SUPA_URL+'/rest/v1/plants?select=*&updated_at=gt.'+encodeURIComponent(last)+'&order=updated_at.asc',{headers:authHeaders()});
+    if(!r.ok)throw new Error('pull '+r.status+': '+await r.text().catch(()=>''));
+    const remote=await r.json();
+    let changed=false,maxTs=last;
+    remote.forEach(row=>{
+      if(row.updated_at>maxTs)maxTs=row.updated_at;
+      if(row.id==='__order'){
+        const lts=parseInt(localStorage.getItem(KEY+'-orderts')||'0')||0;
+        const rts=(row.data&&row.data._ts)||0;
+        if(rts>lts&&row.data&&Array.isArray(row.data.ids)){
+          const pos={};row.data.ids.forEach((id,i)=>pos[id]=i);
+          data.sort((a,b)=>(pos[a.id]!==undefined?pos[a.id]:1e9)-(pos[b.id]!==undefined?pos[b.id]:1e9));
+          try{localStorage.setItem(KEY+'-orderts',String(rts))}catch(e){}
+          changed=true;
+        }
+        return;
+      }
+      const i=data.findIndex(x=>x.id===row.id);
+      if(row.deleted){if(i>=0){data.splice(i,1);changed=true}return}
+      const rts=(row.data&&row.data._ts)||0;
+      if(i<0){data.push(row.data);changed=true}
+      else if(rts>(data[i]._ts||0)){data[i]=row.data;changed=true}
+    });
+    /* 4. first sync: seed the server with anything it doesn't have */
+    if(first){
+      const remoteIds=new Set(remote.map(x=>x.id));
+      const missing=data.filter(e=>!remoteIds.has(e.id));
+      if(missing.length){
+        const now=Date.now();
+        missing.forEach(e=>{e._ts=e._ts||now});
+        await supaUpsert(missing.map(e=>({id:e.id,data:e,deleted:false,updated_at:new Date(e._ts).toISOString()})));
+      }
+    }
+    if(changed){persistLocal();render()}
+    localStorage.setItem(SYNCKEY,maxTs);
+    setSync('ok');
+  }catch(err){setSync('error',String(err&&err.message||err))}
+}
+function setSync(s,msg){
+  const el=document.getElementById('syncstate');
+  if(!el)return;
+  let pend=0;try{pend=(JSON.parse(localStorage.getItem(KEY+'-pending')||'[]')).length}catch(e){}
+  const map={ok:'· sync ✓ '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),offline:'· sync: offline'+(pend?' ('+pend+' pending)':''),syncing:'· syncing…',error:'· sync error — hover for details'};
+  el.textContent=map[s]||'';
+  el.title=msg||'';
+  el.style.color=s==='error'?'#a33':s==='offline'?'#8a6a1f':'';
+}
+window.addEventListener('online',syncNow);
+function toggleMenu(ev){
+  ev.stopPropagation();
+  const m=document.getElementById('moremenu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',ev=>{
+  const m=document.getElementById('moremenu');
+  if(m&&m.style.display!=='none'&&!ev.target.closest('.menuwrap'))m.style.display='none';
+});
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}
+  t.textContent=msg;t.classList.add('on');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),4000);
+}
+
+/* photo handling: up to 5 per entry, compressed to max 640px JPEG */
+let pendingPhotos=[];
+function pickPhoto(ev){
+  const files=Array.from(ev.target.files||[]);ev.target.value='';
+  files.forEach(f=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        if(pendingPhotos.length>=5){toast('Limit of 5 photos per entry.');return}
+        const max=640,sc=Math.min(1,max/Math.max(img.width,img.height));
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        pendingPhotos.push(cv.toDataURL('image/jpeg',0.7));
+        renderPhotoThumbs();
+      };
+      img.src=r.result;
+    };
+    r.readAsDataURL(f);
+  });
+}
+function removePhoto(i){pendingPhotos.splice(i,1);renderPhotoThumbs()}
+function renderPhotoThumbs(){
+  $('f_photothumbs').innerHTML=pendingPhotos.map((p,i)=>`<span class="pthumb"><img src="${p}" alt=""><button type="button" title="Remove" onclick="removePhoto(${i})">×</button></span>`).join('');
+  const kb=Math.round(pendingPhotos.reduce((a,p)=>a+p.length,0)*0.75/1024);
+  $('f_photonote').textContent=pendingPhotos.length?pendingPhotos.length+' / 5 · ~'+kb+' KB':'';
+}
+function openPhotoLB(id,i){
+  const e=data.find(x=>x.id===id);
+  if(!e||!e.photos||!e.photos[i])return;
+  let dl=document.getElementById('refdlg');
+  if(!dl){dl=document.createElement('dialog');dl.id='refdlg';dl.innerHTML='<img alt=""><div class="cap"></div>';dl.onclick=()=>dl.close();document.body.appendChild(dl);}
+  dl.querySelector('img').src=e.photos[i];
+  dl.querySelector('.cap').textContent=e.name+' — photo '+(i+1)+' of '+e.photos.length;
+  dl.showModal();
+}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* mini-plant SVG: flower by form, or leaf if not bloomed */
+function viz(e){
+  const p=e.petal||'#c94f4f',c=e.calyx||'#6b8f5e',s=e.stamen||'#c9a227';
+  const rib='stroke="rgba(0,0,0,.25)" stroke-width="1.1" fill="none" stroke-linecap="round"';
+  const CAL=`<path d="M0 0 C-9 0 -14 2 -16 6 C-16.8 10 -16.9 15 -17 20 L-11 27 L-6 22 L0 29 L6 22 L11 27 L17 20 C16.9 15 16.8 10 16 6 C14 2 9 0 0 0 Z" fill="${c}"/><path d="M-6.5 1.5 C-8 8 -8.3 14 -8 20 M0 1 L0 27 M6.5 1.5 C8 8 8.3 14 8 20" ${rib}/>`;
+  const stam=(y1,y2,cy)=>`<line x1="0" y1="${y1}" x2="0" y2="${y2}" stroke="${s}" stroke-width="1.8" stroke-linecap="round"/><path d="M0 ${y2} L-4 ${y2+3} M0 ${y2} L-2 ${y2+6} M0 ${y2} L2 ${y2+6} M0 ${y2} L4 ${y2+3}" stroke="${s}" stroke-width=".9" fill="none" stroke-linecap="round"/><g fill="${s}"><circle cx="-4" cy="${cy}" r="2"/><circle cx="-1.5" cy="${cy+3}" r="2"/><circle cx="2" cy="${cy+3}" r="2"/><circle cx="4.5" cy="${cy-1}" r="2"/></g>`;
+  const shapes={
+   tubular:`<path d="M-9 26 C-13 38 -20 50 -24 62 C-28 78 -22 92 -9 98 L-6 92 C-2 96 2 96 6 92 L9 98 C22 92 28 78 24 62 C20 50 13 38 9 26 C4 29 -4 29 -9 26 Z" fill="${p}"/><path d="M-4 30 C-9 50 -11 72 -6 92 M5 31 C9 52 10 74 6 92" ${rib}/><path d="M0 0 C-6 0 -10 3 -12 8 C-13 14 -13 20 -12 26 L-8 33 L-4 28 L0 34 L4 28 L8 33 L12 26 C13 20 13 14 12 8 C10 3 6 0 0 0 Z" fill="${c}"/><path d="M-5 2 C-6 11 -6 20 -5 28 M5 2 C6 11 6 20 5 28" ${rib}/><line x1="0" y1="96" x2="0" y2="104" stroke="${s}" stroke-width="2" stroke-linecap="round"/><g fill="${s}"><circle cx="0" cy="107" r="2.1"/><circle cx="-3" cy="105" r="1.6"/><circle cx="3" cy="105" r="1.6"/></g>`,
+   waisted:`<path d="M-9 44 C-16 52 -26 60 -34 65 C-31 72 -27 79 -21 85 C-17 88 -13 86 -12 82 C-9 86 -5 88 0 88 C5 88 9 86 12 82 C13 86 17 88 21 85 C27 79 31 72 34 65 C26 60 16 52 9 44 C5 46 -5 46 -9 44 Z" fill="${p}"/><path d="M-4 47 C-8 60 -11 72 -12 81 M6 47 C9 60 11 71 12 81" ${rib}/><path d="M0 0 C-13 1 -21 8 -22 18 C-23 26 -21 33 -17 39 C-16 43 -17 47 -18 50 C-14 49 -11 46 -9 42 C-6 45 -3 47 0 47 C3 47 6 45 9 42 C11 46 14 49 18 50 C17 47 16 43 17 39 C21 33 23 26 22 18 C21 8 13 1 0 0 Z" fill="${c}"/><path d="M-10 4 C-13 15 -12 28 -9 39 M0 2 L0 45 M10 4 C13 15 12 28 9 39" ${rib}/>${stam(88,95,99)}`,
+   bell:`<path d="M-17 20 C-24 26 -36 36 -46 50 C-52 60 -55 74 -54 83 C-50 87 -45 86 -42 82 C-35 89 -26 92 -17 93 C-11 94 -5 94 0 94 C5 94 11 94 17 93 C26 92 35 89 42 82 C45 86 50 87 54 83 C55 74 52 60 46 50 C36 36 24 26 17 20 C10 22 -10 22 -17 20 Z" fill="${p}"/><path d="M-7 24 C-18 42 -32 64 -42 81 M4 24 C8 48 12 72 17 92" ${rib}/>${CAL}${stam(94,98,102)}`,
+   partial:`<path d="M-17 20 C-22 30 -34 44 -45 60 C-51 68 -55 76 -54 83 C-50 87 -45 86 -42 82 C-35 89 -26 92 -17 93 C-11 94 -5 94 0 94 C5 94 11 94 17 93 C26 92 35 89 42 82 C45 86 50 87 54 83 C55 76 51 68 45 60 C34 44 22 30 17 20 C10 22 -10 22 -17 20 Z" fill="${p}"/><path d="M-7 24 C-18 42 -32 64 -42 81 M4 24 C8 48 12 72 17 92" ${rib}/>${CAL}${stam(94,100,104)}`,
+   globe:`<path d="M-16 17 C-28 22 -38 32 -41 46 C-43 58 -38 70 -28 78 C-23 82 -17 84 -12 84 C-10 82 -10 79 -12 77 C-7 80 7 80 12 77 C10 79 10 82 12 84 C17 84 23 82 28 78 C38 70 43 58 41 46 C38 32 28 22 16 17 C10 19 -10 19 -16 17 Z" fill="${p}"/><path d="M-7 19 C-18 36 -20 58 -12 76 M6 19 C15 34 17 56 11 76" ${rib}/><path d="M0 0 C-8 0 -13 2 -15 6 C-16 9 -16.5 13 -16 17 L-10 23 L-5 18 L0 25 L5 18 L10 23 L16 17 C16.5 13 16 9 15 6 C13 2 8 0 0 0 Z" fill="${c}"/><path d="M-6 1.5 C-7.5 7 -7.8 12 -7.5 17 M6 1.5 C7.5 7 7.8 12 7.5 17" ${rib}/>`,
+   wide:`<path d="M-17 20 C-30 24 -46 32 -58 44 C-63 49 -64 54 -62 57 C-58 61 -52 60 -50 56 C-44 62 -36 66 -28 67 C-23 68 -19 66 -19 62 C-13 66 -6 68 0 68 C6 68 13 66 19 62 C19 66 23 68 28 67 C36 66 44 62 50 56 C52 60 58 61 62 57 C64 54 63 49 58 44 C46 32 30 24 17 20 C10 22 -10 22 -17 20 Z" fill="${p}"/><path d="M-8 23 C-22 33 -37 45 -49 55 M0 24 C-4 38 -11 52 -18 61 M9 23 C15 36 18 50 19 61" ${rib}/>${CAL}${stam(68,77,81)}`,
+   flat:(function(){const pt='M0 0 C-14 -6 -24 -18 -25 -33 C-24 -44 -18 -50 -10 -51 C-6 -54 -2 -52 0 -53 C2 -52 6 -54 10 -51 C18 -50 24 -44 25 -33 C24 -18 14 -6 0 0 Z';let g='';[0,72,144,216,288].forEach(a=>{g+=`<g transform="rotate(${a})"><path d="${pt}" fill="${p}" stroke="rgba(0,0,0,.2)" stroke-width="1"/></g>`});return `<g transform="translate(0,45)">${g}<circle r="13" fill="rgba(255,255,255,.35)"/><path d="M0 0 L-8 -6 M0 0 L-9 3 M0 0 L-4 9 M0 0 L4 9 M0 0 L9 3 M0 0 L8 -6 M0 0 L0 -10" stroke="${s}" stroke-width="1" fill="none" stroke-linecap="round"/><g fill="${s}"><circle cx="-8" cy="-6" r="1.7"/><circle cx="-9" cy="3" r="1.7"/><circle cx="-4" cy="9" r="1.7"/><circle cx="4" cy="9" r="1.7"/><circle cx="9" cy="3" r="1.7"/><circle cx="8" cy="-6" r="1.7"/><circle r="3"/></g></g>`})()
+  };
+  const formIcon={'tubular / barely open':'tubular','slender lantern':'tubular','waisted lantern':'waisted','slender lantern (waisted)':'waisted','bell-shaped':'bell','pendant bell':'bell','partially flared':'partial','flared bell':'partial','globe / rounded':'globe','widely flared':'wide','open bowl':'wide','flat / fully open':'flat'};
+  const fk=formIcon[e.form];
+  if(e.form && fk && shapes[fk]) return `<svg width="82" height="94" viewBox="-66 -40 132 152"><path d="M-14 -34 C-6 -28 -2 -16 0 0" stroke="#5a3a30" stroke-width="1.8" fill="none" stroke-linecap="round"/>${shapes[fk]}</svg>`;
+  const leaves={
+   'unlobed':'M40 6 C58 20 62 44 40 66 C18 44 22 20 40 6Z',
+   '3-lobed shallow':'M40 6 L46 24 L60 20 L50 38 L40 64 L30 38 L20 20 L34 24 Z',
+   '3-lobed deep':'M40 4 L48 26 L66 14 L52 42 L40 66 L28 42 L14 14 L32 26 Z',
+   '5-lobed':'M40 4 L46 22 L62 12 L56 32 L74 34 L54 44 L46 64 L40 50 L34 64 L26 44 L6 34 L24 32 L18 12 L34 22 Z'
+  };
+  let lk=e.leaf||'unlobed';
+  if(lk==='3-lobed')lk=(e.sinus==='deep')?'3-lobed deep':'3-lobed shallow';
+  return `<svg width="64" height="64" viewBox="0 0 80 80"><path d="${leaves[lk]||leaves['unlobed']}" fill="#4a7c59"/><line x1="40" y1="10" x2="40" y2="74" stroke="#3a6347" stroke-width="1.5"/></svg>`;
+}
+
+let dragId=null;
+const VIEWKEY='abutilon-journal-view';
+function applyView(){
+  const g=localStorage.getItem(VIEWKEY)==='grid';
+  $('cards').classList.toggle('grid',g);
+  const b=document.getElementById('viewtoggle');
+  if(b)b.textContent=g?'List view':'Grid view';
+}
+function toggleView(){
+  localStorage.setItem(VIEWKEY,localStorage.getItem(VIEWKEY)==='grid'?'list':'grid');
+  applyView();
+}
+function render(){
+  const wrap=$('cards');wrap.innerHTML='';
+  $('empty').style.display=data.length?'none':'block';
+  $('count').textContent=data.length?data.length+' plant'+(data.length>1?'s':'')+' catalogued':'';
+  data.forEach(e=>{
+    const ph=e.photos||[];
+    const div=document.createElement('div');div.className='card'+(ph.length?' hasphotos':'');
+    div.dataset.id=e.id;
+    const sw=(col,name,label)=>col?`<span class="chip"><span class="sw" style="background:${col}"></span>${esc(name||label)}</span>`:'';
+    div.innerHTML=`<span class="grip" draggable="true" title="Drag to reorder">⠿</span>${ph.length?`<div class="photocol">${ph.map((src,i)=>`<img src="${src}" alt="" title="Click to enlarge" onclick="openPhotoLB('${e.id}',${i})">`).join('')}</div>`:''}<div class="cardbody">
+      <div class="viz">${viz(e)}</div>
+      <h3>${esc(e.name)}</h3>
+      <div class="meta">${esc(e.stage||'')}${e.date?' · '+esc(e.date):''}${e.parents?' · '+esc(e.parents):''}</div>
+      <div class="traitline"><b>Leaf</b> ${esc(e.leaf)}${e.sinus&&e.sinus!=='—'?' · '+esc(e.sinus)+' sinus':''}${e.veincount&&e.veincount!=='—'?' · '+esc(e.veincount)+' veins':''} · ${esc(e.margin)}</div>
+      <div class="traitline"><b>Stem/habit</b> ${esc(e.stem)} · ${esc(e.habit)}</div>
+      <div class="traitline"><b>Flower</b> ${e.form?esc(e.form)+(e.vein&&e.vein!=='—'?' · veins: '+esc(e.vein):''):'<i>not yet bloomed</i>'}</div>
+      ${[e.fsize,e.edge,e.doubling,e.substance,e.finish,e.posture,e.pattern].some(v=>v&&v!=='—')||e.aging?`<div class="traitline"><b>Flower detail</b> ${[e.fsize,e.edge,e.doubling,e.substance,e.finish,e.posture,e.pattern].filter(v=>v&&v!=='—').map(esc).join(' · ')}${e.aging?' · ages: '+esc(e.aging):''}</div>`:''}
+      ${[e.calyxshape,e.calyxsize].some(v=>v&&v!=='—')?`<div class="traitline"><b>Calyx</b> ${[e.calyxshape,e.calyxsize].filter(v=>v&&v!=='—').map(esc).join(' · ')}</div>`:''}
+      <div class="traitline">${sw(e.form?e.petal:'',e.petalname,'petals')} ${sw(e.form?e.calyx:'',e.calyxname,'calyx')} ${sw(e.form?e.stamen:'',e.stamenname,'stamens')} ${e.vigor&&e.vigor!=='—'?'<span class="chip">vigor '+esc(e.vigor)+'/5</span>':''}</div>
+      ${e.cultivars&&e.cultivars.length?`<div class="traitline"><b>Close cultivars</b> ${e.cultivars.map(c=>'<span class="chip">'+esc(c)+'</span>').join('')}</div>`:''}
+      ${e.cvnotes?`<div class="traitline"><b>Compare</b> ${esc(e.cvnotes)}</div>`:''}
+      ${e.notes?`<div class="traitline" style="margin-top:6px">${esc(e.notes)}</div>`:''}
+      ${e.logs&&e.logs.length?`<div class="logs">${e.logs.slice(-3).map(l=>`<div><span class="d">${esc(l.d)}</span>${esc(l.t)}</div>`).join('')}</div>`:''}
+      <div class="cardbtns">
+        <button class="btn" onclick="openForm('${e.id}')">Edit</button>
+        <button class="btn" onclick="addLog('${e.id}')">＋ Log observation</button>
+        <button class="btn" onclick="del('${e.id}')" style="color:#a33">Delete</button>
+      </div></div>`;
+    const grip=div.querySelector('.grip');
+    grip.addEventListener('dragstart',ev=>{
+      dragId=e.id;div.classList.add('dragging');
+      ev.dataTransfer.effectAllowed='move';
+      try{ev.dataTransfer.setData('text/plain',e.id)}catch(_){ }
+    });
+    grip.addEventListener('dragend',()=>{
+      dragId=null;
+      document.querySelectorAll('.card').forEach(c=>c.classList.remove('dragging','droptarget'));
+    });
+    div.addEventListener('dragover',ev=>{
+      if(!dragId||dragId===e.id)return;
+      ev.preventDefault();ev.dataTransfer.dropEffect='move';
+      div.classList.add('droptarget');
+    });
+    div.addEventListener('dragleave',()=>div.classList.remove('droptarget'));
+    div.addEventListener('drop',ev=>{
+      if(!dragId||dragId===e.id)return;
+      ev.preventDefault();
+      const from=data.findIndex(x=>x.id===dragId);
+      if(from<0)return;
+      const r=div.getBoundingClientRect();
+      const before=$('cards').classList.contains('grid')?(ev.clientX<r.left+r.width/2):(ev.clientY<r.top+r.height/2);
+      const [moved]=data.splice(from,1);
+      const to=data.findIndex(x=>x.id===e.id);
+      data.splice(before?to:to+1,0,moved);
+      dragId=null;
+      pushOrder();
+      persist();render();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+function openForm(id){
+  const e=id?data.find(x=>x.id===id):null;
+  $('dtitle').textContent=e?'Edit: '+e.name:'Add seedling';
+  $('f_id').value=e?e.id:'';
+  $('f_name').value=e?e.name:'';$('f_parents').value=e?e.parents||'':'';
+  $('f_date').value=e?e.date||'':new Date().toISOString().slice(0,10);
+  $('f_stage').value=e?e.stage:'seedling';
+  $('f_leaf').value=e?e.leaf:'5-lobed';$('f_sinus').value=e?e.sinus||'—':'—';$('f_veincount').value=e?e.veincount||'—':'—';$('f_margin').value=e?e.margin:'serrate (sharp teeth)';
+  $('f_stem').value=e?e.stem:'green';$('f_habit').value=e?e.habit:'too young to tell';
+  $('f_form').value=e?e.form||'':'';$('f_vein').value=e?e.vein||'—':'—';
+  ['fsize','edge','doubling','substance','finish','posture','pattern'].forEach(k=>{$('f_'+k).value=e&&e[k]?e[k]:'—'});
+  $('f_aging').value=e?e.aging||'':'';
+  $('f_petal').value=e?e.petal:'#c94f4f';$('f_petalname').value=e?e.petalname||'':'';
+  $('f_calyx').value=e?e.calyx:'#6b8f5e';$('f_calyxname').value=e?e.calyxname||'':'';
+  $('f_calyxshape').value=e?e.calyxshape||'—':'—';$('f_calyxsize').value=e?e.calyxsize||'—':'—';
+  $('f_stamen').value=e?e.stamen:'#c9a227';$('f_stamenname').value=e?e.stamenname||'':'';
+  $('f_vigor').value=e?e.vigor||'—':'—';$('f_notes').value=e?e.notes||'':'';
+  const cv=(e&&e.cultivars)||[];
+  $('f_cv1').value=cv[0]||'';$('f_cv2').value=cv[1]||'';$('f_cv3').value=cv[2]||'';
+  $('f_cvnotes').value=e?e.cvnotes||'':'';
+  pendingPhotos=((e&&(e.photos||(e.photo?[e.photo]:[])))||[]).slice();
+  renderPhotoThumbs();
+  dlg.showModal();
+}
+
+function saveEntry(ev){
+  ev.preventDefault();
+  const id=$('f_id').value||('p'+Date.now());
+  const e={id,name:$('f_name').value.trim(),parents:$('f_parents').value.trim(),date:$('f_date').value,
+    stage:$('f_stage').value,leaf:$('f_leaf').value,sinus:$('f_sinus').value,veincount:$('f_veincount').value,margin:$('f_margin').value,stem:$('f_stem').value,
+    habit:$('f_habit').value,form:$('f_form').value,vein:$('f_vein').value,
+    fsize:$('f_fsize').value,edge:$('f_edge').value,doubling:$('f_doubling').value,
+    substance:$('f_substance').value,finish:$('f_finish').value,posture:$('f_posture').value,
+    pattern:$('f_pattern').value,aging:$('f_aging').value.trim(),
+    petal:$('f_petal').value,petalname:$('f_petalname').value.trim(),
+    calyx:$('f_calyx').value,calyxname:$('f_calyxname').value.trim(),
+    calyxshape:$('f_calyxshape').value,calyxsize:$('f_calyxsize').value,
+    stamen:$('f_stamen').value,stamenname:$('f_stamenname').value.trim(),
+    vigor:$('f_vigor').value,notes:$('f_notes').value.trim(),
+    cultivars:[$('f_cv1').value,$('f_cv2').value,$('f_cv3').value].map(v=>v.trim()).filter(Boolean),
+    cvnotes:$('f_cvnotes').value.trim(),
+    photos:pendingPhotos.slice(),
+    logs:(data.find(x=>x.id===id)||{}).logs||[]};
+  e._ts=Date.now();
+  const i=data.findIndex(x=>x.id===id);
+  if(i>=0)data[i]=e;else data.push(e);
+  persist([id]);render();dlg.close();
+}
+
+const logdlg=$('logdlg');
+function addLog(id){
+  const e=data.find(x=>x.id===id);
+  $('logtitle').textContent='Log observation — '+e.name;
+  $('log_id').value=id;$('log_text').value='';
+  logdlg.showModal();
+}
+function saveLog(ev){
+  ev.preventDefault();
+  const t=$('log_text').value.trim();
+  if(t){
+    const e=data.find(x=>x.id===$('log_id').value);
+    e.logs=e.logs||[];e.logs.push({d:new Date().toISOString().slice(0,10),t});
+    e._ts=Date.now();
+    persist([e.id]);render();
+  }
+  logdlg.close();
+}
+
+function del(id){
+  const card=event.target.closest('.card');
+  if(event.target.dataset.arm){tomb(id);data=data.filter(x=>x.id!==id);persist();render();return}
+  event.target.dataset.arm='1';event.target.textContent='Really delete?';
+  setTimeout(()=>{if(card&&card.isConnected){const b=card.querySelector('[data-arm]');if(b){delete b.dataset.arm;b.textContent='Delete'}}},3000);
+}
+
+function savePortable(){
+  const doc=document.documentElement.cloneNode(true);
+  /* bake current data (incl. photos) into the file */
+  doc.querySelector('#seed').textContent=JSON.stringify(data).replace(/<\//g,'<\\/');
+  /* strip transient rendered state — it rebuilds on load */
+  const cards=doc.querySelector('#cards');if(cards)cards.innerHTML='';
+  const pt=doc.querySelector('#f_photothumbs');if(pt)pt.innerHTML='';
+  const t=doc.querySelector('#toast');if(t)t.remove();
+  const stamp=new Date().toISOString().slice(0,16).replace('T',' ');
+  doc.setAttribute('data-saved',stamp);
+  const html='<!DOCTYPE html>\n'+doc.outerHTML;
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='abutilon-journal.html';a.click();
+  try{localStorage.setItem(KEY+'-dirty','0');localStorage.setItem(KEY+'-lastsave',stamp)}catch(e){}
+  saveState();
+  toast('Saved v'+APP_VERSION+' ('+stamp+'). That one file is the whole journal — app, data, and photos. Works in any browser, offline, forever.');
+}
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='abutilon-journal-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importJSON(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){const now=Date.now();d.forEach(x=>{x._ts=x._ts||now});data=d;pushOrder();persist(d.map(x=>x.id));render();}else toast('Not a valid journal file.')}catch(e){toast('Could not read file.')}};
+  r.readAsText(f);ev.target.value='';
+}
+/* procedural leaf generator: computed outlines with serrate margins + palmate veins */
+function genLeaves(){
+  const cfg={
+    unlobed:{m:1,a:0,c:1,range:70,w:.6,taper:.55,teeth:22,s:.05,L:86,veins:[[-30,.55],[-15,.75],[0,1],[15,.75],[30,.55]]},
+    three:{m:6.55,a:.3,c:.7,range:75,w:.74,taper:.4,teeth:24,s:.045,L:88,veins:[[-55,.92],[0,1],[55,.92]]},
+    threeShallow:{m:6.55,a:.13,c:.87,range:75,w:.72,taper:.45,teeth:24,s:.045,L:86,veins:[[-55,.9],[0,1],[55,.9]]},
+    five:{m:9,a:.36,c:.64,range:85,w:.82,taper:.32,teeth:26,s:.045,L:90,veins:[[-80,.85],[-40,.95],[0,1],[40,.95],[80,.85]]}
+  };
+  const B={x:55,y:100};
+  document.querySelectorAll('path[data-leaf]').forEach(pl=>{
+    const k=cfg[pl.dataset.leaf];if(!k)return;
+    const N=300;let d='';
+    for(let i=0;i<=N;i++){
+      const deg=-k.range+2*k.range*i/N, rad=deg*Math.PI/180;
+      let r=(k.c+k.a*Math.cos(k.m*rad));
+      r*=Math.pow(Math.max(0.02,Math.cos((deg/k.range)*(Math.PI/2)*.98)),k.taper);
+      r*=1-k.s*((i*k.teeth/N)%1);
+      r*=k.L;
+      const x=B.x+r*Math.sin(rad)*k.w, y=B.y-r*Math.cos(rad);
+      d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+    }
+    pl.setAttribute('d',d+'Z');
+    const vp=pl.parentNode.querySelector('path[data-veins]');
+    if(vp){let vd='';
+      k.veins.forEach(v=>{
+        const deg=v[0],rad=deg*Math.PI/180;
+        let r=(k.c+k.a*Math.cos(k.m*rad));
+        r*=Math.pow(Math.max(0.02,Math.cos((deg/k.range)*(Math.PI/2)*.98)),k.taper);
+        r*=k.L*v[1]*.9;
+        const x=B.x+r*Math.sin(rad)*k.w, y=B.y-r*Math.cos(rad);
+        const mx=B.x+(x-B.x)*.4, my=B.y-(B.y-y)*.5-2;
+        vd+=`M${B.x} ${B.y} Q${mx.toFixed(1)} ${my.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
+      });
+      vp.setAttribute('d',vd);
+    }
+  });
+}
+/* ===== embedded reference photos =====
+   Keys match MBN filenames: abutilon_<key>1.jpg. When a data URL is present here,
+   glossary tiles show the photo and every MBN link opens it offline instead. */
+const REF_IMGS={};/*REF_IMGS_HERE*/
+function openRef(key,cap){
+  let dl=document.getElementById('refdlg');
+  if(!dl){
+    dl=document.createElement('dialog');dl.id='refdlg';
+    dl.innerHTML='<img alt=""><div class="cap"></div>';
+    dl.onclick=()=>dl.close();
+    document.body.appendChild(dl);
+  }
+  dl.querySelector('img').src=REF_IMGS[key];
+  dl.querySelector('.cap').textContent=(cap||key)+' — photo: Monterey Bay Nursery';
+  dl.showModal();
+}
+(function(){
+  document.querySelectorAll('img[data-refimg]').forEach(im=>{
+    const d=REF_IMGS[im.dataset.refimg];
+    if(d){im.src=d;im.style.display='block';im.onclick=()=>openRef(im.dataset.refimg,im.alt)}
+  });
+  document.querySelectorAll('a[href*="montereybaynursery.com/A/abutilon_"]').forEach(a=>{
+    const m=a.href.match(/abutilon_([a-z0-9_]+?)\d?\.jpg/);
+    if(!m)return;
+    a.addEventListener('click',ev=>{
+      if(REF_IMGS[m[1]]){ev.preventDefault();openRef(m[1],a.textContent)}
+    });
+  });
+})();
+/* migrate single legacy photo -> photos[] */
+(function(){
+  let f=false;
+  data.forEach(x=>{if(x.photo){x.photos=x.photos||[x.photo];delete x.photo;f=true}});
+  if(f)persist();
+})();
+/* render the locked shape drawings into the glossary ladder tiles */
+document.querySelectorAll('.formviz').forEach(el=>{
+  el.innerHTML=viz({form:el.dataset.form,petal:el.dataset.p,calyx:el.dataset.c,stamen:el.dataset.s});
+});
+genLeaves();
+applyView();
+render();
+saveState();
+updateAuthUI();
+seedRestoreCheck();
+idbRestoreCheck();
+syncNow();
+console.log('Abutilon journal loaded:',data.length,'entries');
+</script>
+
+
+</body></html>
