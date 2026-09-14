@@ -51,8 +51,8 @@ th{font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.08e
 .cards{display:flex;flex-direction:column;gap:14px;max-width:820px}
 .cards.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));max-width:none;align-items:start}
 .cards.grid .card.hasphotos{display:block}
-.cards.grid .photocol{flex-direction:row;height:100px;margin-bottom:12px;overflow:hidden}
-.cards.grid .photocol img{min-height:0;min-width:0;width:auto;height:100px}
+.cards.grid .photocol{height:150px;margin-bottom:12px}
+.cards.grid .gal{min-height:150px}
 .grip{position:absolute;top:8px;right:10px;cursor:grab;color:#c9c7c0;font-size:13px;line-height:1;user-select:none;letter-spacing:1px;padding:2px 4px}
 .grip:hover{color:var(--muted)}
 .card.dragging{opacity:.45}
@@ -62,8 +62,14 @@ th{font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.08e
 .card .meta{font-size:12px;color:var(--muted);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .card .viz{float:right;margin:-2px 0 8px 18px}
 .card.hasphotos{display:grid;grid-template-columns:232px 1fr;gap:22px;align-items:stretch}
-.photocol{display:flex;flex-direction:column;gap:8px}
-.photocol img{width:100%;flex:1 1 0;min-height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.photocol{position:relative}
+.gal{position:relative;height:100%;min-height:180px}
+.gal img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in}
+.galbtn{position:absolute;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:15px;line-height:1;cursor:pointer;z-index:2;padding:0}
+.galbtn:hover{background:rgba(0,0,0,.65)}
+.galprev{left:6px}
+.galnext{right:6px}
+.galcount{position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,.45);color:#fff;font-size:10.5px;padding:1px 7px;border-radius:10px;z-index:2}
 .cardbody{min-width:0}
 .traitline{font-size:13px;margin:5px 0;padding-bottom:5px;border-bottom:1px solid #f2f1ed}
 .traitline:last-of-type{border-bottom:none}
@@ -72,12 +78,20 @@ th{font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.08e
 .cardbtns{margin-top:14px;display:flex;gap:8px}
 .cardbtns .btn{font-size:12px;padding:4px 11px}
 .logs{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
-.logs div{font-size:12.5px;margin:3px 0;color:var(--ink)}
-.logs .d{color:var(--muted);font-size:11px;margin-right:8px;font-variant-numeric:tabular-nums}
+.logs div{font-size:12.5px;margin:3px 0;color:var(--ink);display:flex;align-items:baseline}
+.logs .d{color:var(--muted);font-size:11px;margin-right:8px;font-variant-numeric:tabular-nums;flex:none}
+.logs .lt{flex:1;min-width:0}
+.logbtns{flex:none;opacity:0;transition:opacity .15s}
+.logs div:hover .logbtns{opacity:1}
+.logbtns a{cursor:pointer;color:var(--muted);margin-left:8px;font-size:12px;border-bottom:none}
+.logbtns a:hover{color:var(--accent)}
+@media(hover:none){.logbtns{opacity:.6}}
+.formactions{position:sticky;top:0;z-index:5;background:var(--card);display:flex;gap:8px;justify-content:flex-end;padding:8px 0;border-bottom:1px solid var(--line);margin-bottom:12px}
+.fld textarea{min-height:56px;max-height:40vh;resize:vertical;overflow:auto}
 dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:660px;width:92%;box-shadow:0 24px 64px #00000022}
 dialog::backdrop{background:#1d201e59}
 .dhead{background:var(--card);border-bottom:1px solid var(--line);padding:16px 22px;font-weight:650;font-size:15px}
-form.f{padding:18px 22px 22px}
+form.f{padding:18px 22px 22px;max-height:72vh;overflow:auto}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
 .fld{display:flex;flex-direction:column;margin-bottom:10px}
 .fld label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px;font-weight:600}
@@ -132,10 +146,8 @@ main a:hover{border-bottom-color:var(--accent)}
   .frow{grid-template-columns:1fr}
   .card{padding:14px}
   .card.hasphotos{grid-template-columns:1fr;gap:12px}
-  .photocol{flex-direction:column}
-  .photocol img{flex:0 0 auto;min-height:0;min-width:0;width:100%;height:auto}
-  .cards.grid .photocol{flex-direction:column;height:auto;margin-bottom:10px}
-  .cards.grid .photocol img{width:100%;height:auto}
+  .gal{min-height:230px}
+  .cards.grid .photocol{height:200px;margin-bottom:10px}
   .card .viz{margin-left:8px}
   dialog{width:96%}
   .cards.grid{grid-template-columns:1fr}
@@ -180,10 +192,6 @@ main a:hover{border-bottom-color:var(--accent)}
     <div class="authrow">
       <input id="auth_email" type="email" placeholder="you@example.com" autocomplete="email">
       <button class="btn" onclick="sendLink()">Email me a sign-in link</button>
-    </div>
-    <div class="authrow">
-      <input id="auth_code" inputmode="numeric" placeholder="6-digit code from the email">
-      <button class="btn" onclick="verifyCode()">Verify code</button>
     </div>
     <span class="small" id="authmsg">Entries stay on this device until you sign in.</span>
   </div>
@@ -417,7 +425,11 @@ main a:hover{border-bottom-color:var(--accent)}
 <dialog id="dlg">
   <div class="dhead" id="dtitle">Edit: S-01 'Warm Apricot'</div>
   <form class="f" method="dialog" onsubmit="saveEntry(event)">
-    <input type="hidden" id="f_id" value="p1787083702746">
+    <div class="formactions">
+      <button type="button" class="btn" onclick="dlg.close()">Cancel</button>
+      <button type="submit" class="btn pri">Save</button>
+    </div>
+    <input type="hidden" id="f_id">
     <div class="frow">
       <div class="fld"><label>Name / ID *</label><input id="f_name" required="" placeholder="e.g. S-01 'Ember'"></div>
       <div class="fld"><label>Suspected parentage</label><input id="f_parents" placeholder="Mother × hybridum-type donor?"></div>
@@ -463,18 +475,15 @@ main a:hover{border-bottom-color:var(--accent)}
       <div id="f_photothumbs"></div>
     </div>
     <div class="fld"><label>Notes</label><textarea id="f_notes" rows="2" placeholder="Anything else — hairiness, calyx shape, scent, aphid magnet…"></textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-      <button type="button" class="btn" onclick="dlg.close()">Cancel</button>
-      <button type="submit" class="btn pri">Save</button>
-    </div>
   </form>
 </dialog>
 
 <dialog id="logdlg">
   <div class="dhead" id="logtitle">Log observation</div>
   <form class="f" method="dialog" onsubmit="saveLog(event)">
-    <input type="hidden" id="log_id">
-    <div class="fld"><label>Observation (dated today)</label><textarea id="log_text" rows="3" placeholder="e.g. First flower bud forming — calyx looks red-flushed"></textarea></div>
+    <input type="hidden" id="log_id"><input type="hidden" id="log_idx" value="-1">
+    <div class="fld"><label>Date</label><input type="date" id="log_date"></div>
+    <div class="fld"><label>Observation</label><textarea id="log_text" rows="3" placeholder="e.g. First flower bud forming — calyx looks red-flushed"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
       <button type="button" class="btn" onclick="logdlg.close()">Cancel</button>
       <button type="submit" class="btn pri">Save</button>
@@ -486,7 +495,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='38';
+const APP_VERSION='39';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
@@ -569,7 +578,6 @@ function persistLocal(){
     if(prev&&prev!==json)localStorage.setItem(KEY+'-bak',prev);
     localStorage.setItem(KEY,json);
     storageOK=true;
-    try{localStorage.setItem(KEY+'-dirty',String((parseInt(localStorage.getItem(KEY+'-dirty')||'0')||0)+1))}catch(e){}
   }catch(err){
     storageOK=false;
     banner('⚠ Browser storage is FULL — your latest changes are NOT safely stored. Click "Save journal file" RIGHT NOW to preserve them, then remove some photos.');
@@ -580,16 +588,9 @@ function persistLocal(){
 function saveState(){
   const el=document.getElementById('savestate');
   if(!el)return;
-  const d=parseInt(localStorage.getItem(KEY+'-dirty')||'0')||0;
-  const ls=localStorage.getItem(KEY+'-lastsave')||'';
-  let t=storageOK?'· storage ✓':'· STORAGE FAILING — save a journal file now!';
-  if(d>0)t+=' · '+d+' change'+(d>1?'s':'')+' not yet in a saved file';
-  else if(ls)t+=' · file saved '+ls;
-  el.textContent=t;
-  el.style.color=(storageOK&&d===0)?'':(storageOK?'#8a6a1f':'#a33');
-  el.style.fontWeight=(storageOK&&d===0)?'':'600';
-  const sb=document.getElementById('savebtn');
-  if(sb)sb.classList.toggle('pri',d>0);
+  el.textContent=storageOK?'':'· LOCAL CACHE FAILING — data lives on the server, but offline use is at risk';
+  el.style.color=storageOK?'':'#a33';
+  el.style.fontWeight=storageOK?'':'700';
 }
 function banner(msg,actionLabel,actionFn){
   let b=document.getElementById('bigbanner');
@@ -725,22 +726,8 @@ async function sendLink(){
     const r=await fetch(SUPA_URL+'/auth/v1/otp?redirect_to='+encodeURIComponent(location.href.split('#')[0]),{method:'POST',headers:SUPA_HDRS,body:JSON.stringify({email,create_user:true})});
     if(!r.ok)throw new Error(await r.text());
     try{localStorage.setItem(KEY+'-authemail',email)}catch(e){}
-    msg.textContent='Sent! Open the email, then click the link — or type the 6-digit code above.';
+    msg.textContent='Sent! Open the email on this device and click the sign-in link.';
   }catch(e){msg.textContent='Could not send: '+e.message}
-}
-async function verifyCode(){
-  const email=document.getElementById('auth_email').value.trim()||localStorage.getItem(KEY+'-authemail')||'';
-  const code=document.getElementById('auth_code').value.trim();
-  const msg=document.getElementById('authmsg');
-  if(!email||!code){msg.textContent='Need both your email and the code.';return}
-  try{
-    const r=await fetch(SUPA_URL+'/auth/v1/verify',{method:'POST',headers:SUPA_HDRS,body:JSON.stringify({type:'email',email,token:code})});
-    if(!r.ok)throw new Error(await r.text());
-    const j=await r.json();
-    setAuth({at:j.access_token,rt:j.refresh_token,exp:Date.now()+((j.expires_in||3600)-60)*1000,email});
-    toast('Signed in as '+email);
-    syncNow();
-  }catch(e){msg.textContent='Verify failed: '+e.message}
 }
 /* capture tokens when arriving from a magic-link redirect */
 (function(){
@@ -766,8 +753,10 @@ function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,250
 async function syncNow(){
   if(typeof fetch==='undefined')return;
   if(!navigator.onLine){setSync('offline');return}
+  if(!getAuth()){setSync('signedout');return}
   setSync('syncing');
   await ensureAuth();
+  if(!getAuth()){setSync('signedout');return}
   try{
     /* 1. push deletions */
     const tombs=JSON.parse(localStorage.getItem(KEY+'-tombs')||'[]');
@@ -836,7 +825,7 @@ function setSync(s,msg){
   const el=document.getElementById('syncstate');
   if(!el)return;
   let pend=0;try{pend=(JSON.parse(localStorage.getItem(KEY+'-pending')||'[]')).length}catch(e){}
-  const map={ok:'· sync ✓ '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),offline:'· sync: offline'+(pend?' ('+pend+' pending)':''),syncing:'· syncing…',error:'· sync error — hover for details'};
+  const map={ok:'· sync ✓ '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),offline:'· sync: offline'+(pend?' ('+pend+' pending)':''),signedout:'· sync: signed out'+(pend?' ('+pend+' queued)':''),syncing:'· syncing…',error:'· sync error — hover for details'};
   el.textContent=map[s]||'';
   el.title=msg||'';
   el.style.color=s==='error'?'#a33':s==='offline'?'#8a6a1f':'';
@@ -891,6 +880,19 @@ function renderPhotoThumbs(){
   const kb=Math.round(pendingPhotos.reduce((a,p)=>a+p.length,0)*0.75/1024);
   $('f_photonote').textContent=pendingPhotos.length?pendingPhotos.length+' / 5 · ~'+kb+' KB':'';
 }
+function galNav(id,dir,ev){
+  if(ev)ev.stopPropagation();
+  const card=document.querySelector('.card[data-id="'+id+'"]');
+  const e=data.find(x=>x.id===id);
+  if(!card||!e||!e.photos||!e.photos.length)return;
+  const img=card.querySelector('.gal img');
+  const n=e.photos.length;
+  const i=(((parseInt(img.dataset.i)||0)+dir)%n+n)%n;
+  img.src=e.photos[i];img.dataset.i=String(i);
+  const c=card.querySelector('.galcount');
+  if(c)c.textContent=(i+1)+' / '+n;
+}
+function lbFromGal(id,img){openPhotoLB(id,parseInt(img.dataset.i)||0)}
 function openPhotoLB(id,i){
   const e=data.find(x=>x.id===id);
   if(!e||!e.photos||!e.photos[i])return;
@@ -952,7 +954,7 @@ function render(){
     const div=document.createElement('div');div.className='card'+(ph.length?' hasphotos':'');
     div.dataset.id=e.id;
     const sw=(col,name,label)=>col?`<span class="chip"><span class="sw" style="background:${col}"></span>${esc(name||label)}</span>`:'';
-    div.innerHTML=`<span class="grip" draggable="true" title="Drag to reorder">⠿</span>${ph.length?`<div class="photocol">${ph.map((src,i)=>`<img src="${src}" alt="" title="Click to enlarge" onclick="openPhotoLB('${e.id}',${i})">`).join('')}</div>`:''}<div class="cardbody">
+    div.innerHTML=`<span class="grip" draggable="true" title="Drag to reorder">⠿</span>${ph.length?`<div class="photocol"><div class="gal"><img src="${ph[0]}" data-i="0" alt="" title="Click to enlarge" onclick="lbFromGal('${e.id}',this)">${ph.length>1?`<button class="galbtn galprev" onclick="galNav('${e.id}',-1,event)">&#8249;</button><button class="galbtn galnext" onclick="galNav('${e.id}',1,event)">&#8250;</button><span class="galcount">1 / ${ph.length}</span>`:''}</div></div>`:''}<div class="cardbody">
       <div class="viz">${viz(e)}</div>
       <h3>${esc(e.name)}</h3>
       <div class="meta">${esc(e.stage||'')}${e.date?' · '+esc(e.date):''}${e.parents?' · '+esc(e.parents):''}</div>
@@ -965,7 +967,7 @@ function render(){
       ${e.cultivars&&e.cultivars.length?`<div class="traitline"><b>Close cultivars</b> ${e.cultivars.map(c=>'<span class="chip">'+esc(c)+'</span>').join('')}</div>`:''}
       ${e.cvnotes?`<div class="traitline"><b>Compare</b> ${esc(e.cvnotes)}</div>`:''}
       ${e.notes?`<div class="traitline" style="margin-top:6px">${esc(e.notes)}</div>`:''}
-      ${e.logs&&e.logs.length?`<div class="logs">${e.logs.slice(-3).map(l=>`<div><span class="d">${esc(l.d)}</span>${esc(l.t)}</div>`).join('')}</div>`:''}
+      ${e.logs&&e.logs.length?`<div class="logs">${e.logs.map((l,li)=>({l,li})).sort((a,b)=>(a.l.d||'').localeCompare(b.l.d||'')).map(o=>`<div><span class="d">${esc(o.l.d)}</span><span class="lt">${esc(o.l.t)}</span><span class="logbtns"><a onclick="editLog('${e.id}',${o.li})" title="Edit observation">&#9998;</a><a onclick="deleteLog('${e.id}',${o.li})" title="Delete observation">&#215;</a></span></div>`).join('')}</div>`:''}
       <div class="cardbtns">
         <button class="btn" onclick="openForm('${e.id}')">Edit</button>
         <button class="btn" onclick="addLog('${e.id}')">＋ Log observation</button>
@@ -1028,6 +1030,7 @@ function openForm(id){
   pendingPhotos=((e&&(e.photos||(e.photo?[e.photo]:[])))||[]).slice();
   renderPhotoThumbs();
   dlg.showModal();
+  setTimeout(autosizeTAs,0);
 }
 
 function saveEntry(ev){
@@ -1058,20 +1061,57 @@ const logdlg=$('logdlg');
 function addLog(id){
   const e=data.find(x=>x.id===id);
   $('logtitle').textContent='Log observation — '+e.name;
-  $('log_id').value=id;$('log_text').value='';
+  $('log_id').value=id;$('log_idx').value='-1';
+  $('log_date').value=new Date().toISOString().slice(0,10);
+  $('log_text').value='';
   logdlg.showModal();
+  setTimeout(autosizeTAs,0);
+}
+function editLog(id,idx){
+  const e=data.find(x=>x.id===id);
+  if(!e||!e.logs||!e.logs[idx])return;
+  $('logtitle').textContent='Edit observation — '+e.name;
+  $('log_id').value=id;$('log_idx').value=String(idx);
+  $('log_date').value=e.logs[idx].d||new Date().toISOString().slice(0,10);
+  $('log_text').value=e.logs[idx].t||'';
+  logdlg.showModal();
+  setTimeout(autosizeTAs,0);
+}
+function deleteLog(id,idx){
+  const e=data.find(x=>x.id===id);
+  if(!e||!e.logs||!e.logs[idx])return;
+  e.logs.splice(idx,1);
+  e._ts=Date.now();
+  persist([e.id]);render();
+  toast('Observation deleted.');
 }
 function saveLog(ev){
   ev.preventDefault();
   const t=$('log_text').value.trim();
-  if(t){
-    const e=data.find(x=>x.id===$('log_id').value);
-    e.logs=e.logs||[];e.logs.push({d:new Date().toISOString().slice(0,10),t});
+  const d=$('log_date').value||new Date().toISOString().slice(0,10);
+  const e=data.find(x=>x.id===$('log_id').value);
+  const idx=parseInt($('log_idx').value);
+  if(e&&t){
+    e.logs=e.logs||[];
+    if(idx>=0&&e.logs[idx])e.logs[idx]={d,t};
+    else e.logs.push({d,t});
     e._ts=Date.now();
     persist([e.id]);render();
   }
   logdlg.close();
 }
+function autosizeTAs(){
+  document.querySelectorAll('textarea').forEach(t=>{
+    t.style.height='auto';
+    t.style.height=Math.min(t.scrollHeight+2,Math.round(window.innerHeight*0.4))+'px';
+  });
+}
+document.addEventListener('input',ev=>{
+  if(ev.target&&ev.target.tagName==='TEXTAREA'){
+    ev.target.style.height='auto';
+    ev.target.style.height=Math.min(ev.target.scrollHeight+2,Math.round(window.innerHeight*0.4))+'px';
+  }
+});
 
 function del(id){
   const card=event.target.closest('.card');
@@ -1094,8 +1134,6 @@ function savePortable(){
   const blob=new Blob([html],{type:'text/html'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='abutilon-journal.html';a.click();
-  try{localStorage.setItem(KEY+'-dirty','0');localStorage.setItem(KEY+'-lastsave',stamp)}catch(e){}
-  saveState();
   toast('Saved v'+APP_VERSION+' ('+stamp+'). That one file is the whole journal — app, data, and photos. Works in any browser, offline, forever.');
 }
 function exportJSON(){
