@@ -194,7 +194,7 @@ main a:hover{border-bottom-color:var(--accent)}
       <input id="auth_email" type="email" placeholder="you@example.com" autocomplete="email">
       <button class="btn" onclick="sendLink()">Email me a sign-in link</button>
     </div>
-    <span class="small" id="authmsg">Entries stay on this device until you sign in.</span>
+    <span class="small" id="authmsg">Your journal lives on the server. Sign in once on this device to load it — after that it stays signed in and syncs automatically.</span>
   </div>
   <div class="cards" id="cards"></div>
   <div class="empty" id="empty" style="display:none">No seedlings yet. Click <b>＋ Add seedling</b> to start your catalogue.<br>Tip: add the mother tree first so every seedling can be compared against it.</div>
@@ -492,7 +492,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='40';
+const APP_VERSION='41';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
@@ -734,6 +734,7 @@ async function sendLink(){
     if(p.get('access_token')){
       setAuth({at:p.get('access_token'),rt:p.get('refresh_token'),exp:Date.now()+((parseInt(p.get('expires_in'))||3600)-60)*1000,email:''});
       try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+      setTimeout(()=>toast('Signed in — syncing your journal…'),300);
     }
   }
 })();
@@ -828,6 +829,9 @@ function setSync(s,msg){
   el.style.color=s==='error'?'#a33':s==='offline'?'#8a6a1f':'';
 }
 window.addEventListener('online',syncNow);
+/* keep long-lived tabs fresh: re-sync on refocus and every 5 minutes while visible */
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow()});
+setInterval(()=>{if(!document.hidden)syncNow()},5*60*1000);
 function fullResync(){
   try{localStorage.removeItem(SYNCKEY)}catch(e){}
   toast('Checkpoint cleared — pulling everything fresh…');
