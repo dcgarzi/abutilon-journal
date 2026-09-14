@@ -485,7 +485,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='36';
+const APP_VERSION='37';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
@@ -502,16 +502,7 @@ if(!data.length){
   /* no browser data — fall back to data baked into this file (portable copy) */
   try{const s=JSON.parse(document.getElementById('seed').textContent);if(Array.isArray(s)&&s.length){data=s;persist()}}catch(e){}
 }
-if(!data.length){
-  data=[{id:'m1',name:"Mother tree — 'Red Emperor' (working ID)",parents:'unknown — see Parent ID tab',date:'',stage:'mother plant',
-    leaf:'3-lobed',sinus:'medium',veincount:'5',margin:'serrate (sharp teeth)',stem:'dark red',habit:'upright',form:'bell-shaped',vein:'strong contrast',
-    fsize:'medium (1.5–2.5″)',edge:'ruffled',doubling:'single',substance:'medium',posture:'pendant',
-    petal:'#cf4b2e',petalname:'orange-red, dark veins',calyx:'#5f2433',calyxname:'dusky maroon',stamen:'#7a1424',stamenname:'dark red',
-    calyxshape:'tight / clasping',calyxsize:'medium',
-    vigor:'4',notes:'6ft+, scraggly. Pendant rounded lanterns, half-open with ruffled mouths; orange-red petals with strong darker veining; dusky maroon buds & calyx; dark pedicels; dark stamens at the mouth; broad 3-lobed leaves — long pointed center lobe, short side lobes.',
-    logs:[{d:new Date().toISOString().slice(0,10),t:'Catalogued as the seed parent of all yard seedlings (photo-confirmed).'}]}];
-  persist();
-}
+/* (bootstrap starter entry retired in v37 — a fresh device starts empty and fills from sync) */
 /* one-time correction: fix the mother entry if it still carries the pre-photo defaults */
 (function(){
   const m=data.find(x=>x.id==='m1');
@@ -792,7 +783,7 @@ async function syncNow(){
         rows.push({id:'__order',data:{ids:data.map(x=>x.id),_ts:ts},deleted:false,updated_at:new Date(ts).toISOString()});
       }else{
         const e=data.find(x=>x.id===id);
-        if(e)rows.push({id:e.id,data:e,deleted:false,updated_at:new Date(e._ts||Date.now()).toISOString()});
+        if(e){e._ts=e._ts||Date.now();rows.push({id:e.id,data:e,deleted:false,updated_at:new Date(e._ts).toISOString()})}
       }
     });
     if(rows.length){
@@ -823,7 +814,7 @@ async function syncNow(){
       if(row.deleted){if(i>=0){data.splice(i,1);changed=true}return}
       const rts=(row.data&&row.data._ts)||0;
       if(i<0){data.push(row.data);changed=true}
-      else if(rts>(data[i]._ts||0)){data[i]=row.data;changed=true}
+      else if(rts>(data[i]._ts||0)||!data[i]._ts){data[i]=row.data;changed=true}
     });
     /* 4. first sync: seed the server with anything it doesn't have */
     if(first){
