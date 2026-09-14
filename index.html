@@ -168,6 +168,7 @@ main a:hover{border-bottom-color:var(--accent)}
         <button id="savebtn" onclick="savePortable()" title="Downloads a single .html snapshot — app plus data, works offline anywhere.">Save journal file</button>
         <button onclick="exportJSON()">Export data (.json)</button>
         <button onclick="document.getElementById('importfile').click()">Import data</button>
+        <button onclick="fullResync()" title="Clears the sync checkpoint and pulls everything fresh from the server — use if a device seems out of date.">Full re-sync</button>
         <button id="signoutbtn" style="display:none" onclick="signOut()">Sign out</button>
       </div>
     </div>
@@ -485,7 +486,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='37';
+const APP_VERSION='38';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
@@ -841,6 +842,11 @@ function setSync(s,msg){
   el.style.color=s==='error'?'#a33':s==='offline'?'#8a6a1f':'';
 }
 window.addEventListener('online',syncNow);
+function fullResync(){
+  try{localStorage.removeItem(SYNCKEY)}catch(e){}
+  toast('Checkpoint cleared — pulling everything fresh…');
+  syncNow();
+}
 function toggleMenu(ev){
   ev.stopPropagation();
   const m=document.getElementById('moremenu');
