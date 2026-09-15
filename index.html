@@ -49,14 +49,35 @@ th{font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.08e
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn:hover{filter:brightness(.97)}
 .cards{display:flex;flex-direction:column;gap:14px;max-width:820px}
-.cards.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));max-width:none;align-items:start}
+.cards.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));max-width:none;align-items:start}
+/* grid = compact gallery tiles, uniform height */
+.cards.grid .card{cursor:pointer}
+.cards.grid .traitline,.cards.grid .logs,.cards.grid .cardbtns{display:none}
+.cards.grid .grip,.cards.grid .movebtns{display:none!important}
 .cards.grid .card.hasphotos{display:block}
-.cards.grid .photocol{height:150px;margin-bottom:12px}
-.cards.grid .gal{min-height:150px}
+.cards.grid .photocol{height:140px;margin-bottom:8px}
+.cards.grid .gal{min-height:140px}
+.cards.grid .card.hasphotos .viz{display:none}
+.cards.grid .card:not(.hasphotos) .viz{float:none;display:flex;justify-content:center;align-items:center;height:140px;margin:0 0 8px}
+.cards.grid .meta{border-bottom:none;padding-bottom:0;margin-bottom:0}
+/* click a tile: expand in place to the full record */
+.cards.grid .card.expanded{grid-column:1/-1}
+.cards.grid .card.expanded .traitline{display:block}
+.cards.grid .card.expanded .logs{display:block}
+.cards.grid .card.expanded .cardbtns{display:flex}
+.cards.grid .card.expanded .meta{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px}
+.cards.grid .card.expanded.hasphotos{display:grid;grid-template-columns:232px 1fr;gap:22px}
+.cards.grid .card.expanded .photocol{height:auto}
+.cards.grid .card.expanded .gal{min-height:200px;height:100%}
+.cards.grid .card.expanded.hasphotos .viz{display:block}
+.cards.grid .card.expanded:not(.hasphotos) .viz{float:right;display:block;height:auto;margin:-2px 0 8px 18px}
 .grip{position:absolute;top:8px;right:10px;cursor:grab;color:#c9c7c0;font-size:13px;line-height:1;user-select:none;letter-spacing:1px;padding:2px 4px}
 .grip:hover{color:var(--muted)}
 .card.dragging{opacity:.45}
 .card.droptarget{outline:2px dashed var(--accent);outline-offset:2px}
+.movebtns{position:absolute;top:6px;right:8px;display:none;flex-direction:column;gap:3px;z-index:3}
+.movebtns a{width:28px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--soft);border:1px solid var(--line);border-radius:5px;color:var(--muted);font-size:10px;cursor:pointer;border-bottom:1px solid var(--line)}
+@media(hover:none){.movebtns{display:flex}.grip{display:none}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;position:relative}
 .card h3{margin:0 0 2px;font-size:15.5px;font-weight:650;letter-spacing:-.01em}
 .card .meta{font-size:12px;color:var(--muted);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
@@ -148,10 +169,19 @@ main a:hover{border-bottom-color:var(--accent)}
   .card{padding:14px}
   .card.hasphotos{grid-template-columns:1fr;gap:12px}
   .gal{min-height:230px}
-  .cards.grid .photocol{height:200px;margin-bottom:10px}
   .card .viz{margin-left:8px}
   dialog{width:96%}
-  .cards.grid{grid-template-columns:1fr}
+  /* mobile grid sizing (compact gallery rules are global) */
+  .cards.grid{grid-template-columns:1fr 1fr;gap:10px}
+  .cards.grid .card{padding:10px}
+  .cards.grid .photocol{height:110px;margin-bottom:8px}
+  .cards.grid .gal{min-height:110px}
+  .cards.grid .card:not(.hasphotos) .viz{height:110px}
+  .cards.grid .card h3{font-size:13px}
+  .cards.grid .meta{font-size:10.5px}
+  .cards.grid .galbtn{width:22px;height:22px;font-size:13px}
+  .cards.grid .card.expanded.hasphotos{display:block}
+  .cards.grid .card.expanded .photocol{height:auto;min-height:200px}
 }
 </style>
 </head>
@@ -492,7 +522,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='41';
+const APP_VERSION='43';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
@@ -784,26 +814,27 @@ async function syncNow(){
     const r=await fetch(SUPA_URL+'/rest/v1/plants?select=*&updated_at=gt.'+encodeURIComponent(last)+'&order=updated_at.asc',{headers:authHeaders()});
     if(!r.ok)throw new Error('pull '+r.status+': '+await r.text().catch(()=>''));
     const remote=await r.json();
-    let changed=false,maxTs=last;
+    let changed=false,maxTs=last,orderRow=null;
     remote.forEach(row=>{
       if(row.updated_at>maxTs)maxTs=row.updated_at;
-      if(row.id==='__order'){
-        const lts=parseInt(localStorage.getItem(KEY+'-orderts')||'0')||0;
-        const rts=(row.data&&row.data._ts)||0;
-        if(rts>lts&&row.data&&Array.isArray(row.data.ids)){
-          const pos={};row.data.ids.forEach((id,i)=>pos[id]=i);
-          data.sort((a,b)=>(pos[a.id]!==undefined?pos[a.id]:1e9)-(pos[b.id]!==undefined?pos[b.id]:1e9));
-          try{localStorage.setItem(KEY+'-orderts',String(rts))}catch(e){}
-          changed=true;
-        }
-        return;
-      }
+      if(row.id==='__order'){orderRow=row;return}
       const i=data.findIndex(x=>x.id===row.id);
       if(row.deleted){if(i>=0){data.splice(i,1);changed=true}return}
       const rts=(row.data&&row.data._ts)||0;
       if(i<0){data.push(row.data);changed=true}
       else if(rts>(data[i]._ts||0)||!data[i]._ts){data[i]=row.data;changed=true}
     });
+    /* apply saved card order only after ALL rows are merged */
+    if(orderRow){
+      const lts=parseInt(localStorage.getItem(KEY+'-orderts')||'0')||0;
+      const rts=(orderRow.data&&orderRow.data._ts)||0;
+      if(rts>lts&&orderRow.data&&Array.isArray(orderRow.data.ids)){
+        const pos={};orderRow.data.ids.forEach((id,i)=>pos[id]=i);
+        data.sort((a,b)=>(pos[a.id]!==undefined?pos[a.id]:1e9)-(pos[b.id]!==undefined?pos[b.id]:1e9));
+        try{localStorage.setItem(KEY+'-orderts',String(rts))}catch(e){}
+        changed=true;
+      }
+    }
     /* 4. first sync: seed the server with anything it doesn't have */
     if(first){
       const remoteIds=new Set(remote.map(x=>x.id));
@@ -832,6 +863,16 @@ window.addEventListener('online',syncNow);
 /* keep long-lived tabs fresh: re-sync on refocus and every 5 minutes while visible */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow()});
 setInterval(()=>{if(!document.hidden)syncNow()},5*60*1000);
+function moveCard(id,dir,ev){
+  if(ev)ev.stopPropagation();
+  const i=data.findIndex(x=>x.id===id);
+  const j=i+dir;
+  if(i<0||j<0||j>=data.length)return;
+  const [m]=data.splice(i,1);
+  data.splice(j,0,m);
+  pushOrder();
+  persist();render();
+}
 function fullResync(){
   try{localStorage.removeItem(SYNCKEY)}catch(e){}
   toast('Checkpoint cleared — pulling everything fresh…');
@@ -955,7 +996,7 @@ function render(){
     const div=document.createElement('div');div.className='card'+(ph.length?' hasphotos':'');
     div.dataset.id=e.id;
     const sw=(col,name,label)=>col?`<span class="chip"><span class="sw" style="background:${col}"></span>${esc(name||label)}</span>`:'';
-    div.innerHTML=`<span class="grip" draggable="true" title="Drag to reorder">⠿</span>${ph.length?`<div class="photocol"><div class="gal"><img src="${ph[0]}" data-i="0" alt="" title="Click to enlarge" onclick="lbFromGal('${e.id}',this)">${ph.length>1?`<button class="galbtn galprev" onclick="galNav('${e.id}',-1,event)">&#8249;</button><button class="galbtn galnext" onclick="galNav('${e.id}',1,event)">&#8250;</button><span class="galcount">1 / ${ph.length}</span>`:''}</div></div>`:''}<div class="cardbody">
+    div.innerHTML=`<span class="grip" draggable="true" title="Drag to reorder">⠿</span><span class="movebtns"><a onclick="moveCard('${e.id}',-1,event)" title="Move up">&#9650;</a><a onclick="moveCard('${e.id}',1,event)" title="Move down">&#9660;</a></span>${ph.length?`<div class="photocol"><div class="gal"><img src="${ph[0]}" data-i="0" alt="" title="Click to enlarge" onclick="lbFromGal('${e.id}',this)">${ph.length>1?`<button class="galbtn galprev" onclick="galNav('${e.id}',-1,event)">&#8249;</button><button class="galbtn galnext" onclick="galNav('${e.id}',1,event)">&#8250;</button><span class="galcount">1 / ${ph.length}</span>`:''}</div></div>`:''}<div class="cardbody">
       <div class="viz">${viz(e)}</div>
       <h3>${esc(e.name)}</h3>
       <div class="meta">${esc(e.stage||'')}${e.date?' · '+esc(e.date):''}${e.parents?' · '+esc(e.parents):''}</div>
@@ -990,6 +1031,11 @@ function render(){
       div.classList.add('droptarget');
     });
     div.addEventListener('dragleave',()=>div.classList.remove('droptarget'));
+    div.addEventListener('click',ev=>{
+      if(!$('cards').classList.contains('grid'))return;
+      if(ev.target.closest('button,a,input,textarea,select,.gal,.grip,.movebtns'))return;
+      div.classList.toggle('expanded');
+    });
     div.addEventListener('drop',ev=>{
       if(!dragId||dragId===e.id)return;
       ev.preventDefault();
