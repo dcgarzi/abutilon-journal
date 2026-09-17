@@ -522,7 +522,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='43';
+const APP_VERSION='44';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
@@ -659,9 +659,9 @@ function idbRestoreCheck(){
       rq.onsuccess=()=>{
         try{
           const mirror=JSON.parse(rq.result||'[]');
-          if(Array.isArray(mirror)&&mirror.length>data.length){
+          if(Array.isArray(mirror)&&(mirror.length>data.length||(rq.result||'').length>JSON.stringify(data).length+2000)){
             const ts=rt&&rt.result?new Date(rt.result).toLocaleString():'unknown time';
-            banner('Backup found: '+mirror.length+' entries (saved '+ts+') — more than the '+data.length+' currently loaded.','Restore backup',()=>{
+            banner('Backup found: '+mirror.length+' entries (saved '+ts+') that hold more than what is currently loaded.','Restore backup',()=>{
               data=mirror;persist(mirror.map(x=>x.id));render();
               document.getElementById('bigbanner').remove();
               toast('Backup restored — now click "Save journal file" to make it permanent.');
@@ -690,22 +690,32 @@ window.addEventListener('beforeunload',ev=>{if(!storageOK){ev.preventDefault();e
 const SUPA_URL='https://hpdotarafccrwowlbyzw.supabase.co';
 const SUPA_KEY='sb_publishable_tnC1Nq4XIYffqGO8mOaJRQ_r40MBF5v';
 const SYNCKEY=KEY+'-lastsync';
+/* pending queue lives in MEMORY first; localStorage is only a best-effort mirror
+   so a storage failure can never silently drop pushes */
+const pendingMem=new Set();
+let tombsMem=[];
+let orderTsMem=0;
+try{JSON.parse(localStorage.getItem(KEY+'-pending')||'[]').forEach(i=>pendingMem.add(i))}catch(e){}
+try{tombsMem=JSON.parse(localStorage.getItem(KEY+'-tombs')||'[]')||[]}catch(e){}
+try{orderTsMem=parseInt(localStorage.getItem(KEY+'-orderts')||'0')||0}catch(e){}
 function markChanged(ids){
-  try{
-    const p=new Set(JSON.parse(localStorage.getItem(KEY+'-pending')||'[]'));
-    ids.forEach(i=>p.add(i));
-    localStorage.setItem(KEY+'-pending',JSON.stringify([...p]));
-  }catch(e){}
+  ids.forEach(i=>pendingMem.add(i));
+  try{localStorage.setItem(KEY+'-pending',JSON.stringify([...pendingMem]))}catch(e){}
+}
+function clearPending(ids){
+  ids.forEach(i=>pendingMem.delete(i));
+  try{localStorage.setItem(KEY+'-pending',JSON.stringify([...pendingMem]))}catch(e){}
 }
 function tomb(id){
-  try{
-    const t=JSON.parse(localStorage.getItem(KEY+'-tombs')||'[]');
-    t.push({id,ts:Date.now()});
-    localStorage.setItem(KEY+'-tombs',JSON.stringify(t));
-  }catch(e){}
+  tombsMem.push({id,ts:Date.now()});
+  try{localStorage.setItem(KEY+'-tombs',JSON.stringify(tombsMem))}catch(e){}
+}
+function setOrderTs(ts){
+  orderTsMem=ts;
+  try{localStorage.setItem(KEY+'-orderts',String(ts))}catch(e){}
 }
 function pushOrder(){
-  try{localStorage.setItem(KEY+'-orderts',String(Date.now()))}catch(e){}
+  setOrderTs(Date.now());
   markChanged(['__order']);
 }
 const SUPA_HDRS={'apikey':SUPA_KEY,'Content-Type':'application/json'};
@@ -769,12 +779,26 @@ async function sendLink(){
   }
 })();
 async function supaUpsert(rows){
-  const r=await fetch(SUPA_URL+'/rest/v1/plants?on_conflict=id',{
-    method:'POST',
-    headers:Object.assign({'Prefer':'resolution=merge-duplicates,return=minimal'},authHeaders()),
-    body:JSON.stringify(rows)
-  });
-  if(!r.ok)throw new Error('push '+r.status+': '+await r.text().catch(()=>''));
+  /* chunk large payloads so a single oversized request can't sink the whole push */
+  const MAX=500000;
+  let batch=[],size=0;
+  async function flush(){
+    if(!batch.length)return;
+    const r=await fetch(SUPA_URL+'/rest/v1/plants?on_conflict=id',{
+      method:'POST',
+      headers:Object.assign({'Prefer':'resolution=merge-duplicates,return=minimal'},authHeaders()),
+      body:JSON.stringify(batch)
+    });
+    if(!r.ok)throw new Error('push '+r.status+': '+await r.text().catch(()=>''));
+    batch=[];size=0;
+  }
+  for(const row of rows){
+    const s=JSON.stringify(row).length;
+    if(batch.length&&size+s>MAX)await flush();
+    batch.push(row);size+=s;
+    if(size>MAX)await flush();
+  }
+  await flush();
 }
 let syncTimer=null;
 function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,2500)}
@@ -787,17 +811,17 @@ async function syncNow(){
   if(!getAuth()){setSync('signedout');return}
   try{
     /* 1. push deletions */
-    const tombs=JSON.parse(localStorage.getItem(KEY+'-tombs')||'[]');
-    if(tombs.length){
-      await supaUpsert(tombs.map(t=>({id:t.id,data:{},deleted:true,updated_at:new Date(t.ts).toISOString()})));
-      localStorage.setItem(KEY+'-tombs','[]');
+    if(tombsMem.length){
+      await supaUpsert(tombsMem.map(t=>({id:t.id,data:{},deleted:true,updated_at:new Date(t.ts).toISOString()})));
+      tombsMem=[];
+      try{localStorage.setItem(KEY+'-tombs','[]')}catch(e){}
     }
     /* 2. push pending changes */
-    const pend=JSON.parse(localStorage.getItem(KEY+'-pending')||'[]');
+    const pend=[...pendingMem];
     const rows=[];
     pend.forEach(id=>{
       if(id==='__order'){
-        const ts=parseInt(localStorage.getItem(KEY+'-orderts')||'0')||Date.now();
+        const ts=orderTsMem||Date.now();
         rows.push({id:'__order',data:{ids:data.map(x=>x.id),_ts:ts},deleted:false,updated_at:new Date(ts).toISOString()});
       }else{
         const e=data.find(x=>x.id===id);
@@ -806,7 +830,7 @@ async function syncNow(){
     });
     if(rows.length){
       await supaUpsert(rows);
-      localStorage.setItem(KEY+'-pending','[]');
+      clearPending(pend);
     }
     /* 3. pull changes since last sync */
     const first=!localStorage.getItem(SYNCKEY);
@@ -826,12 +850,11 @@ async function syncNow(){
     });
     /* apply saved card order only after ALL rows are merged */
     if(orderRow){
-      const lts=parseInt(localStorage.getItem(KEY+'-orderts')||'0')||0;
       const rts=(orderRow.data&&orderRow.data._ts)||0;
-      if(rts>lts&&orderRow.data&&Array.isArray(orderRow.data.ids)){
+      if(rts>orderTsMem&&orderRow.data&&Array.isArray(orderRow.data.ids)){
         const pos={};orderRow.data.ids.forEach((id,i)=>pos[id]=i);
         data.sort((a,b)=>(pos[a.id]!==undefined?pos[a.id]:1e9)-(pos[b.id]!==undefined?pos[b.id]:1e9));
-        try{localStorage.setItem(KEY+'-orderts',String(rts))}catch(e){}
+        setOrderTs(rts);
         changed=true;
       }
     }
@@ -853,8 +876,8 @@ async function syncNow(){
 function setSync(s,msg){
   const el=document.getElementById('syncstate');
   if(!el)return;
-  let pend=0;try{pend=(JSON.parse(localStorage.getItem(KEY+'-pending')||'[]')).length}catch(e){}
-  const map={ok:'· sync ✓ '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),offline:'· sync: offline'+(pend?' ('+pend+' pending)':''),signedout:'· sync: signed out'+(pend?' ('+pend+' queued)':''),syncing:'· syncing…',error:'· sync error — hover for details'};
+  const pend=pendingMem.size;
+  const map={ok:'· sync ✓ '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(pend?' · '+pend+' still pending!':''),offline:'· sync: offline'+(pend?' ('+pend+' pending)':''),signedout:'· sync: signed out'+(pend?' ('+pend+' queued)':''),syncing:'· syncing…',error:'· sync error ('+pend+' unpushed) — hover for details'};
   el.textContent=map[s]||'';
   el.title=msg||'';
   el.style.color=s==='error'?'#a33':s==='offline'?'#8a6a1f':'';
