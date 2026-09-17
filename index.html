@@ -522,7 +522,7 @@ main a:hover{border-bottom-color:var(--accent)}
 <script>
 /* APP_VERSION is bumped every time the app itself changes. A file downloaded via
    "Save journal file" additionally gets a saved-on stamp, so any two copies can be compared. */
-const APP_VERSION='44';
+const APP_VERSION='45';
 (function(){
   const saved=document.documentElement.getAttribute('data-saved');
   document.getElementById('verbadge').textContent='v'+APP_VERSION+(saved?' · saved '+saved:' · live artifact');
@@ -718,6 +718,17 @@ function pushOrder(){
   setOrderTs(Date.now());
   markChanged(['__order']);
 }
+/* union-merge the append-mostly fields (photos, observations) so divergent copies
+   combine instead of one side silently losing. Returns true if anything was added. */
+function unionEntry(target,src){
+  let added=false;
+  const lk=l=>(l.d||'')+''+(l.t||'');
+  const have=new Set((target.logs||[]).map(lk));
+  (src&&src.logs||[]).forEach(l=>{if(!have.has(lk(l))){(target.logs=target.logs||[]).push(l);have.add(lk(l));added=true}});
+  const hp=new Set(target.photos||[]);
+  (src&&src.photos||[]).forEach(p=>{if(!hp.has(p)){(target.photos=target.photos||[]).push(p);hp.add(p);added=true}});
+  return added;
+}
 const SUPA_HDRS={'apikey':SUPA_KEY,'Content-Type':'application/json'};
 
 /* ===== magic-link auth ===== */
@@ -846,7 +857,14 @@ async function syncNow(){
       if(row.deleted){if(i>=0){data.splice(i,1);changed=true}return}
       const rts=(row.data&&row.data._ts)||0;
       if(i<0){data.push(row.data);changed=true}
-      else if(rts>(data[i]._ts||0)||!data[i]._ts){data[i]=row.data;changed=true}
+      else if(rts>(data[i]._ts||0)||!data[i]._ts){
+        const localCopy=data[i];
+        data[i]=row.data;
+        if(unionEntry(data[i],localCopy)){data[i]._ts=Date.now();markChanged([row.id])}
+        changed=true;
+      }else{
+        if(unionEntry(data[i],row.data)){data[i]._ts=Date.now();markChanged([row.id]);changed=true}
+      }
     });
     /* apply saved card order only after ALL rows are merged */
     if(orderRow){
